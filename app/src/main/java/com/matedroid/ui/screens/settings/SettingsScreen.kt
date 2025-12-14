@@ -18,7 +18,9 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.matedroid.ui.theme.MateDroidTheme
+import com.matedroid.ui.theme.StatusWarning
 import com.matedroid.ui.theme.StatusError
 import com.matedroid.ui.theme.StatusSuccess
 
@@ -85,6 +88,7 @@ fun SettingsScreen(
                 uiState = uiState,
                 onServerUrlChange = viewModel::updateServerUrl,
                 onApiTokenChange = viewModel::updateApiToken,
+                onAcceptInvalidCertsChange = viewModel::updateAcceptInvalidCerts,
                 onTestConnection = viewModel::testConnection,
                 onSave = { viewModel.saveSettings(onNavigateToDashboard) }
             )
@@ -111,6 +115,7 @@ private fun SettingsContent(
     uiState: SettingsUiState,
     onServerUrlChange: (String) -> Unit,
     onApiTokenChange: (String) -> Unit,
+    onAcceptInvalidCertsChange: (Boolean) -> Unit,
     onTestConnection: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -193,6 +198,63 @@ private fun SettingsContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Accept invalid certificates checkbox
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = uiState.acceptInvalidCerts,
+                onCheckedChange = onAcceptInvalidCertsChange,
+                enabled = !uiState.isTesting && !uiState.isSaving
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Accept invalid certificates",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Enable for self-signed certificates (less secure)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (uiState.acceptInvalidCerts) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = StatusWarning.copy(alpha = 0.1f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = StatusWarning,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Disabling certificate validation makes connections vulnerable to man-in-the-middle attacks. Only use on trusted networks.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusWarning
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -293,6 +355,7 @@ private fun SettingsScreenPreview() {
             uiState = SettingsUiState(isLoading = false),
             onServerUrlChange = {},
             onApiTokenChange = {},
+            onAcceptInvalidCertsChange = {},
             onTestConnection = {},
             onSave = {}
         )
@@ -311,6 +374,26 @@ private fun SettingsScreenWithResultPreview() {
             ),
             onServerUrlChange = {},
             onApiTokenChange = {},
+            onAcceptInvalidCertsChange = {},
+            onTestConnection = {},
+            onSave = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenWithWarningPreview() {
+    MateDroidTheme {
+        SettingsContent(
+            uiState = SettingsUiState(
+                isLoading = false,
+                serverUrl = "https://teslamate.example.com",
+                acceptInvalidCerts = true
+            ),
+            onServerUrlChange = {},
+            onApiTokenChange = {},
+            onAcceptInvalidCertsChange = {},
             onTestConnection = {},
             onSave = {}
         )

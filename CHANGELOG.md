@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Material Design 3 theming with Tesla-inspired colors
 - Dark/light mode support with dynamic colors on Android 12+
 - DataStore for secure settings persistence
+- Option to accept invalid/self-signed TLS certificates for self-hosted instances
 - Hilt dependency injection setup
 - Navigation component with Compose integration
 - Pull-to-refresh on Dashboard screen

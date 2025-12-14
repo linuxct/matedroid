@@ -31,15 +31,17 @@ class TeslamateRepository @Inject constructor(
         return apiFactory.create(settings.serverUrl)
     }
 
-    suspend fun testConnection(serverUrl: String): ApiResult<Unit> {
+    suspend fun testConnection(serverUrl: String, acceptInvalidCerts: Boolean = false): ApiResult<Unit> {
         return try {
-            val api = apiFactory.create(serverUrl)
+            val api = apiFactory.create(serverUrl, acceptInvalidCerts)
             val response = api.ping()
             if (response.isSuccessful) {
                 ApiResult.Success(Unit)
             } else {
                 ApiResult.Error("Server returned ${response.code()}", response.code())
             }
+        } catch (e: javax.net.ssl.SSLHandshakeException) {
+            ApiResult.Error("SSL certificate error. Enable 'Accept invalid certificates' for self-signed certs.")
         } catch (e: Exception) {
             ApiResult.Error(e.message ?: "Connection failed")
         }

@@ -51,7 +51,11 @@ class SettingsViewModelTest {
 
     @Test
     fun `initial state loads settings from datastore`() = runTest {
-        val savedSettings = AppSettings(serverUrl = "https://test.com", apiToken = "token123")
+        val savedSettings = AppSettings(
+            serverUrl = "https://test.com",
+            apiToken = "token123",
+            acceptInvalidCerts = true
+        )
         every { settingsDataStore.settings } returns flowOf(savedSettings)
 
         viewModel = createViewModel()
@@ -59,6 +63,7 @@ class SettingsViewModelTest {
 
         assertEquals("https://test.com", viewModel.uiState.value.serverUrl)
         assertEquals("token123", viewModel.uiState.value.apiToken)
+        assertTrue(viewModel.uiState.value.acceptInvalidCerts)
         assertFalse(viewModel.uiState.value.isLoading)
     }
 
@@ -143,20 +148,33 @@ class SettingsViewModelTest {
 
     @Test
     fun `saveSettings calls datastore and triggers callback`() = runTest {
-        coEvery { settingsDataStore.saveSettings(any(), any()) } returns Unit
+        coEvery { settingsDataStore.saveSettings(any(), any(), any()) } returns Unit
 
         viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.updateServerUrl("https://saved.com")
         viewModel.updateApiToken("saved-token")
+        viewModel.updateAcceptInvalidCerts(true)
 
         var callbackCalled = false
         viewModel.saveSettings { callbackCalled = true }
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { settingsDataStore.saveSettings("https://saved.com", "saved-token") }
+        coVerify { settingsDataStore.saveSettings("https://saved.com", "saved-token", true) }
         assertTrue(callbackCalled)
+    }
+
+    @Test
+    fun `updateAcceptInvalidCerts updates state`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.acceptInvalidCerts)
+
+        viewModel.updateAcceptInvalidCerts(true)
+
+        assertTrue(viewModel.uiState.value.acceptInvalidCerts)
     }
 
     @Test

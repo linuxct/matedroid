@@ -16,6 +16,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val serverUrl: String = "",
     val apiToken: String = "",
+    val acceptInvalidCerts: Boolean = false,
     val isLoading: Boolean = true,
     val isTesting: Boolean = false,
     val isSaving: Boolean = false,
@@ -47,6 +48,7 @@ class SettingsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 serverUrl = settings.serverUrl,
                 apiToken = settings.apiToken,
+                acceptInvalidCerts = settings.acceptInvalidCerts,
                 isLoading = false
             )
         }
@@ -63,6 +65,14 @@ class SettingsViewModel @Inject constructor(
     fun updateApiToken(token: String) {
         _uiState.value = _uiState.value.copy(
             apiToken = token,
+            testResult = null,
+            error = null
+        )
+    }
+
+    fun updateAcceptInvalidCerts(accept: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            acceptInvalidCerts = accept,
             testResult = null,
             error = null
         )
@@ -89,7 +99,7 @@ class SettingsViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = repository.testConnection(url)) {
+            when (val result = repository.testConnection(url, _uiState.value.acceptInvalidCerts)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isTesting = false,
@@ -122,7 +132,8 @@ class SettingsViewModel @Inject constructor(
 
                 settingsDataStore.saveSettings(
                     serverUrl = url,
-                    apiToken = _uiState.value.apiToken
+                    apiToken = _uiState.value.apiToken,
+                    acceptInvalidCerts = _uiState.value.acceptInvalidCerts
                 )
 
                 _uiState.value = _uiState.value.copy(isSaving = false)
