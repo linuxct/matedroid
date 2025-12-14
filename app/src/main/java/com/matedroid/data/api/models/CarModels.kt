@@ -5,83 +5,149 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class CarsResponse(
-    @Json(name = "data") val data: List<CarData>? = null
+    @Json(name = "data") val data: CarsData? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CarsData(
+    @Json(name = "cars") val cars: List<CarData>? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class CarData(
     @Json(name = "car_id") val carId: Int,
-    @Json(name = "display_name") val displayName: String? = null,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "car_details") val carDetails: CarDetails? = null
+) {
+    val displayName: String?
+        get() = name
+}
+
+@JsonClass(generateAdapter = true)
+data class CarDetails(
     @Json(name = "model") val model: String? = null,
     @Json(name = "trim_badging") val trimBadging: String? = null,
-    @Json(name = "vin") val vin: String? = null
+    @Json(name = "vin") val vin: String? = null,
+    @Json(name = "efficiency") val efficiency: Double? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class CarStatusResponse(
-    @Json(name = "data") val data: CarStatus? = null
+    @Json(name = "data") val data: CarStatusData? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CarStatusData(
+    @Json(name = "status") val status: CarStatus? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class CarStatus(
-    @Json(name = "car_id") val carId: Int? = null,
     @Json(name = "display_name") val displayName: String? = null,
     @Json(name = "state") val state: String? = null,
+    @Json(name = "state_since") val stateSince: String? = null,
+    @Json(name = "odometer") val odometer: Double? = null,
+    @Json(name = "car_status") val carStatus: CarStatusDetails? = null,
+    @Json(name = "car_geodata") val carGeodata: CarGeodata? = null,
+    @Json(name = "car_versions") val carVersions: CarVersions? = null,
+    @Json(name = "driving_details") val drivingDetails: DrivingDetails? = null,
+    @Json(name = "climate_details") val climateDetails: ClimateDetails? = null,
+    @Json(name = "battery_details") val batteryDetails: BatteryDetails? = null,
+    @Json(name = "charging_details") val chargingDetails: ChargingDetails? = null
+) {
+    // Convenience accessors that flatten the nested structure
+    val batteryLevel: Int? get() = batteryDetails?.batteryLevel
+    val usableBatteryLevel: Int? get() = batteryDetails?.usableBatteryLevel
+    val ratedBatteryRangeKm: Double? get() = batteryDetails?.ratedBatteryRange
+    val estBatteryRangeKm: Double? get() = batteryDetails?.estBatteryRange
+    val idealBatteryRangeKm: Double? get() = batteryDetails?.idealBatteryRange
+
+    val pluggedIn: Boolean? get() = chargingDetails?.pluggedIn
+    val chargeEnergyAdded: Double? get() = chargingDetails?.chargeEnergyAdded
+    val chargeLimitSoc: Int? get() = chargingDetails?.chargeLimitSoc
+    val chargerPower: Int? get() = chargingDetails?.chargerPower
+    val timeToFullCharge: Double? get() = chargingDetails?.timeToFullCharge
+
+    val isClimateOn: Boolean? get() = climateDetails?.isClimateOn
+    val insideTemp: Double? get() = climateDetails?.insideTemp
+    val outsideTemp: Double? get() = climateDetails?.outsideTemp
+
+    val geofence: String? get() = carGeodata?.geofence
+    val latitude: Double? get() = carGeodata?.latitude
+    val longitude: Double? get() = carGeodata?.longitude
+
+    val locked: Boolean? get() = carStatus?.locked
+    val sentryMode: Boolean? get() = carStatus?.sentryMode
+
+    val version: String? get() = carVersions?.version
+    val updateAvailable: Boolean? get() = carVersions?.updateAvailable
+
+    val speed: Int? get() = drivingDetails?.speed
+    val power: Int? get() = drivingDetails?.power
+    val heading: Int? get() = drivingDetails?.heading
+}
+
+@JsonClass(generateAdapter = true)
+data class CarStatusDetails(
     @Json(name = "healthy") val healthy: Boolean? = null,
+    @Json(name = "locked") val locked: Boolean? = null,
+    @Json(name = "sentry_mode") val sentryMode: Boolean? = null,
+    @Json(name = "windows_open") val windowsOpen: Boolean? = null,
+    @Json(name = "doors_open") val doorsOpen: Boolean? = null,
+    @Json(name = "trunk_open") val trunkOpen: Boolean? = null,
+    @Json(name = "frunk_open") val frunkOpen: Boolean? = null,
+    @Json(name = "is_user_present") val isUserPresent: Boolean? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CarGeodata(
+    @Json(name = "geofence") val geofence: String? = null,
+    @Json(name = "latitude") val latitude: Double? = null,
+    @Json(name = "longitude") val longitude: Double? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CarVersions(
     @Json(name = "version") val version: String? = null,
     @Json(name = "update_available") val updateAvailable: Boolean? = null,
-    @Json(name = "update_version") val updateVersion: String? = null,
+    @Json(name = "update_version") val updateVersion: String? = null
+)
 
-    // Battery
+@JsonClass(generateAdapter = true)
+data class DrivingDetails(
+    @Json(name = "shift_state") val shiftState: String? = null,
+    @Json(name = "power") val power: Int? = null,
+    @Json(name = "speed") val speed: Int? = null,
+    @Json(name = "heading") val heading: Int? = null,
+    @Json(name = "elevation") val elevation: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class ClimateDetails(
+    @Json(name = "is_climate_on") val isClimateOn: Boolean? = null,
+    @Json(name = "inside_temp") val insideTemp: Double? = null,
+    @Json(name = "outside_temp") val outsideTemp: Double? = null,
+    @Json(name = "is_preconditioning") val isPreconditioning: Boolean? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class BatteryDetails(
     @Json(name = "battery_level") val batteryLevel: Int? = null,
     @Json(name = "usable_battery_level") val usableBatteryLevel: Int? = null,
-    @Json(name = "ideal_battery_range_km") val idealBatteryRangeKm: Double? = null,
-    @Json(name = "est_battery_range_km") val estBatteryRangeKm: Double? = null,
-    @Json(name = "rated_battery_range_km") val ratedBatteryRangeKm: Double? = null,
+    @Json(name = "est_battery_range") val estBatteryRange: Double? = null,
+    @Json(name = "rated_battery_range") val ratedBatteryRange: Double? = null,
+    @Json(name = "ideal_battery_range") val idealBatteryRange: Double? = null
+)
 
-    // Charging
+@JsonClass(generateAdapter = true)
+data class ChargingDetails(
     @Json(name = "plugged_in") val pluggedIn: Boolean? = null,
+    @Json(name = "charging_state") val chargingState: String? = null,
     @Json(name = "charge_energy_added") val chargeEnergyAdded: Double? = null,
     @Json(name = "charge_limit_soc") val chargeLimitSoc: Int? = null,
     @Json(name = "charge_port_door_open") val chargePortDoorOpen: Boolean? = null,
     @Json(name = "charger_actual_current") val chargerActualCurrent: Int? = null,
     @Json(name = "charger_power") val chargerPower: Int? = null,
     @Json(name = "charger_voltage") val chargerVoltage: Int? = null,
-    @Json(name = "scheduled_charging_start_time") val scheduledChargingStartTime: String? = null,
-    @Json(name = "time_to_full_charge") val timeToFullCharge: Double? = null,
-
-    // Climate
-    @Json(name = "is_climate_on") val isClimateOn: Boolean? = null,
-    @Json(name = "inside_temp") val insideTemp: Double? = null,
-    @Json(name = "outside_temp") val outsideTemp: Double? = null,
-    @Json(name = "is_preconditioning") val isPreconditioning: Boolean? = null,
-
-    // Location
-    @Json(name = "latitude") val latitude: Double? = null,
-    @Json(name = "longitude") val longitude: Double? = null,
-    @Json(name = "heading") val heading: Int? = null,
-    @Json(name = "geofence") val geofence: String? = null,
-
-    // Driving
-    @Json(name = "speed") val speed: Int? = null,
-    @Json(name = "power") val power: Int? = null,
-    @Json(name = "shift_state") val shiftState: String? = null,
-
-    // Odometer
-    @Json(name = "odometer") val odometer: Double? = null,
-
-    // Doors & Security
-    @Json(name = "locked") val locked: Boolean? = null,
-    @Json(name = "sentry_mode") val sentryMode: Boolean? = null,
-    @Json(name = "is_user_present") val isUserPresent: Boolean? = null,
-
-    // Windows
-    @Json(name = "windows_open") val windowsOpen: Boolean? = null,
-
-    // Frunk & Trunk
-    @Json(name = "frunk_open") val frunkOpen: Boolean? = null,
-    @Json(name = "trunk_open") val trunkOpen: Boolean? = null,
-
-    // Timestamps
-    @Json(name = "since") val since: String? = null
+    @Json(name = "time_to_full_charge") val timeToFullCharge: Double? = null
 )

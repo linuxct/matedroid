@@ -51,7 +51,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.matedroid.data.api.models.BatteryDetails
+import com.matedroid.data.api.models.CarGeodata
 import com.matedroid.data.api.models.CarStatus
+import com.matedroid.data.api.models.CarStatusDetails
+import com.matedroid.data.api.models.CarVersions
+import com.matedroid.data.api.models.ChargingDetails
+import com.matedroid.data.api.models.ClimateDetails
 import com.matedroid.ui.theme.MateDroidTheme
 import com.matedroid.ui.theme.StatusError
 import com.matedroid.ui.theme.StatusSuccess
@@ -573,20 +579,26 @@ private fun DashboardPreview() {
             status = CarStatus(
                 displayName = "My Tesla",
                 state = "online",
-                batteryLevel = 72,
-                ratedBatteryRangeKm = 312.5,
-                chargeLimitSoc = 80,
-                pluggedIn = true,
-                chargerPower = 11,
-                chargeEnergyAdded = 15.3,
-                timeToFullCharge = 1.5,
-                locked = true,
-                geofence = "Home",
-                insideTemp = 21.5,
-                outsideTemp = 15.2,
-                isClimateOn = false,
                 odometer = 45678.0,
-                version = "2024.8.7"
+                carStatus = CarStatusDetails(locked = true),
+                carGeodata = CarGeodata(geofence = "Home"),
+                carVersions = CarVersions(version = "2024.8.7"),
+                climateDetails = ClimateDetails(
+                    isClimateOn = false,
+                    insideTemp = 21.5,
+                    outsideTemp = 15.2
+                ),
+                batteryDetails = BatteryDetails(
+                    batteryLevel = 72,
+                    ratedBatteryRange = 312.5
+                ),
+                chargingDetails = ChargingDetails(
+                    pluggedIn = true,
+                    chargerPower = 11,
+                    chargeEnergyAdded = 15.3,
+                    timeToFullCharge = 1.5,
+                    chargeLimitSoc = 80
+                )
             )
         )
     }
