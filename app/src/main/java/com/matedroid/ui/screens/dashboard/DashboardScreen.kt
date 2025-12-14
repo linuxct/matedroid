@@ -214,9 +214,6 @@ private fun DashboardContent(
             LocationCard(geofence = geofence, status = status)
         }
 
-        // Climate Section
-        ClimateCard(status)
-
         // Vehicle Info Section
         VehicleInfoCard(status)
 
@@ -466,69 +463,6 @@ private fun LocationCard(geofence: String, status: CarStatus) {
                     text = geofence,
                     style = MaterialTheme.typography.titleMedium
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ClimateCard(status: CarStatus) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Thermostat,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Climate",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                if (status.isClimateOn == true) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "ON",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StatusSuccess
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Inside",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = status.insideTemp?.let { "%.1f°C".format(it) } ?: "--",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Outside",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = status.outsideTemp?.let { "%.1f°C".format(it) } ?: "--",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
             }
         }
     }
