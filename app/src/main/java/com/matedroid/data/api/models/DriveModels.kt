@@ -5,45 +5,73 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class DrivesResponse(
-    @Json(name = "data") val data: List<DriveData>? = null
+    @Json(name = "data") val data: DrivesData? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class DrivesData(
+    @Json(name = "drives") val drives: List<DriveData>? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class DriveData(
-    @Json(name = "id") val id: Int,
+    @Json(name = "drive_id") val driveId: Int,
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "end_date") val endDate: String? = null,
     @Json(name = "start_address") val startAddress: String? = null,
     @Json(name = "end_address") val endAddress: String? = null,
-    @Json(name = "distance") val distance: Double? = null,
+    @Json(name = "odometer_details") val odometerDetails: DriveOdometerDetails? = null,
     @Json(name = "duration_min") val durationMin: Int? = null,
+    @Json(name = "duration_str") val durationStr: String? = null,
     @Json(name = "speed_max") val speedMax: Int? = null,
+    @Json(name = "speed_avg") val speedAvg: Double? = null,
     @Json(name = "power_max") val powerMax: Int? = null,
     @Json(name = "power_min") val powerMin: Int? = null,
-    @Json(name = "start_battery_level") val startBatteryLevel: Int? = null,
-    @Json(name = "end_battery_level") val endBatteryLevel: Int? = null,
-    @Json(name = "start_ideal_range_km") val startIdealRangeKm: Double? = null,
-    @Json(name = "end_ideal_range_km") val endIdealRangeKm: Double? = null,
-    @Json(name = "start_rated_range_km") val startRatedRangeKm: Double? = null,
-    @Json(name = "end_rated_range_km") val endRatedRangeKm: Double? = null,
+    @Json(name = "battery_details") val batteryDetails: DriveBatteryDetails? = null,
+    @Json(name = "range_ideal") val rangeIdeal: DriveRange? = null,
+    @Json(name = "range_rated") val rangeRated: DriveRange? = null,
     @Json(name = "outside_temp_avg") val outsideTempAvg: Double? = null,
     @Json(name = "inside_temp_avg") val insideTempAvg: Double? = null,
-    @Json(name = "start_latitude") val startLatitude: Double? = null,
-    @Json(name = "start_longitude") val startLongitude: Double? = null,
-    @Json(name = "end_latitude") val endLatitude: Double? = null,
-    @Json(name = "end_longitude") val endLongitude: Double? = null
+    @Json(name = "energy_consumed_net") val energyConsumedNet: Double? = null,
+    @Json(name = "consumption_net") val consumptionNet: Double? = null
 ) {
+    // Convenience accessors
+    val id: Int get() = driveId
+    val distance: Double? get() = odometerDetails?.distance
+    val startBatteryLevel: Int? get() = batteryDetails?.startBatteryLevel
+    val endBatteryLevel: Int? get() = batteryDetails?.endBatteryLevel
+    val startRatedRangeKm: Double? get() = rangeRated?.startRange
+    val endRatedRangeKm: Double? get() = rangeRated?.endRange
+
     val efficiencyWhKm: Double?
         get() {
             val dist = distance ?: return null
-            val startRange = startRatedRangeKm ?: return null
-            val endRange = endRatedRangeKm ?: return null
             if (dist <= 0) return null
-            val rangeUsed = startRange - endRange
-            // Assuming ~250 Wh per km of rated range (approximate)
-            return (rangeUsed * 250) / dist
+            val consumed = energyConsumedNet ?: return null
+            return (consumed * 1000) / dist // Convert kWh to Wh per km
         }
 }
+
+@JsonClass(generateAdapter = true)
+data class DriveOdometerDetails(
+    @Json(name = "odometer_start") val odometerStart: Double? = null,
+    @Json(name = "odometer_end") val odometerEnd: Double? = null,
+    @Json(name = "distance") val distance: Double? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class DriveBatteryDetails(
+    @Json(name = "start_battery_level") val startBatteryLevel: Int? = null,
+    @Json(name = "end_battery_level") val endBatteryLevel: Int? = null,
+    @Json(name = "is_range_ideal") val isRangeIdeal: Boolean? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class DriveRange(
+    @Json(name = "start_range") val startRange: Double? = null,
+    @Json(name = "end_range") val endRange: Double? = null,
+    @Json(name = "range_diff") val rangeDiff: Double? = null
+)
 
 @JsonClass(generateAdapter = true)
 data class DriveDetailResponse(
@@ -52,30 +80,32 @@ data class DriveDetailResponse(
 
 @JsonClass(generateAdapter = true)
 data class DriveDetail(
-    @Json(name = "id") val id: Int,
+    @Json(name = "drive_id") val driveId: Int,
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "end_date") val endDate: String? = null,
     @Json(name = "start_address") val startAddress: String? = null,
     @Json(name = "end_address") val endAddress: String? = null,
-    @Json(name = "distance") val distance: Double? = null,
+    @Json(name = "odometer_details") val odometerDetails: DriveOdometerDetails? = null,
     @Json(name = "duration_min") val durationMin: Int? = null,
+    @Json(name = "duration_str") val durationStr: String? = null,
     @Json(name = "speed_max") val speedMax: Int? = null,
+    @Json(name = "speed_avg") val speedAvg: Double? = null,
     @Json(name = "power_max") val powerMax: Int? = null,
     @Json(name = "power_min") val powerMin: Int? = null,
-    @Json(name = "start_battery_level") val startBatteryLevel: Int? = null,
-    @Json(name = "end_battery_level") val endBatteryLevel: Int? = null,
-    @Json(name = "start_ideal_range_km") val startIdealRangeKm: Double? = null,
-    @Json(name = "end_ideal_range_km") val endIdealRangeKm: Double? = null,
-    @Json(name = "start_rated_range_km") val startRatedRangeKm: Double? = null,
-    @Json(name = "end_rated_range_km") val endRatedRangeKm: Double? = null,
+    @Json(name = "battery_details") val batteryDetails: DriveBatteryDetails? = null,
+    @Json(name = "range_ideal") val rangeIdeal: DriveRange? = null,
+    @Json(name = "range_rated") val rangeRated: DriveRange? = null,
     @Json(name = "outside_temp_avg") val outsideTempAvg: Double? = null,
     @Json(name = "inside_temp_avg") val insideTempAvg: Double? = null,
-    @Json(name = "start_latitude") val startLatitude: Double? = null,
-    @Json(name = "start_longitude") val startLongitude: Double? = null,
-    @Json(name = "end_latitude") val endLatitude: Double? = null,
-    @Json(name = "end_longitude") val endLongitude: Double? = null,
+    @Json(name = "energy_consumed_net") val energyConsumedNet: Double? = null,
+    @Json(name = "consumption_net") val consumptionNet: Double? = null,
     @Json(name = "positions") val positions: List<DrivePosition>? = null
-)
+) {
+    val id: Int get() = driveId
+    val distance: Double? get() = odometerDetails?.distance
+    val startBatteryLevel: Int? get() = batteryDetails?.startBatteryLevel
+    val endBatteryLevel: Int? get() = batteryDetails?.endBatteryLevel
+}
 
 @JsonClass(generateAdapter = true)
 data class DrivePosition(

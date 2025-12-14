@@ -128,7 +128,7 @@ class TeslamateRepository @Inject constructor(
             val api = getApi() ?: return ApiResult.Error("Server not configured")
             val response = api.getDrives(carId, startDate, endDate)
             if (response.isSuccessful) {
-                val drives = response.body()?.data ?: emptyList()
+                val drives = response.body()?.data?.drives ?: emptyList()
                 ApiResult.Success(drives)
             } else {
                 ApiResult.Error("Failed to fetch drives: ${response.code()}", response.code())
