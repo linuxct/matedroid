@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +70,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToCharges: (carId: Int) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -106,7 +109,10 @@ fun DashboardScreen(
                 }
                 uiState.carStatus != null -> {
                     DashboardContent(
-                        status = uiState.carStatus!!
+                        status = uiState.carStatus!!,
+                        onNavigateToCharges = {
+                            uiState.selectedCarId?.let { onNavigateToCharges(it) }
+                        }
                     )
                 }
                 uiState.cars.isEmpty() -> {
@@ -183,7 +189,10 @@ private fun ErrorContent(message: String) {
 }
 
 @Composable
-private fun DashboardContent(status: CarStatus) {
+private fun DashboardContent(
+    status: CarStatus,
+    onNavigateToCharges: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -229,6 +238,14 @@ private fun DashboardContent(status: CarStatus) {
 
         // Vehicle Info Section
         VehicleInfoCard(status)
+
+        // Navigation Cards
+        NavigationCard(
+            title = "Charge History",
+            description = "View all charging sessions",
+            icon = Icons.Filled.BatteryChargingFull,
+            onClick = onNavigateToCharges
+        )
     }
 }
 
@@ -569,6 +586,55 @@ private fun formatHoursMinutes(hours: Double): String {
     val h = totalMinutes / 60
     val m = totalMinutes % 60
     return if (h > 0) "${h}h ${m}m" else "${m}m"
+}
+
+@Composable
+private fun NavigationCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Navigate",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Preview(showBackground = true)

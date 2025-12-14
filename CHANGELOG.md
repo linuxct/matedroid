@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Charging status with power, energy added, and time remaining
   - Climate information (inside/outside temperature)
   - Vehicle state (locked, location, odometer, software version)
+- Charges screen with charging history
+  - Summary statistics (total sessions, energy, cost)
+  - List of all charging sessions with details
+  - Navigation from Dashboard to Charges screen
 - TeslamateApi Retrofit client with all endpoints
 - Repository layer with ApiResult sealed class for error handling
 - Material Design 3 theming with Tesla-inspired colors
@@ -23,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Option to accept invalid/self-signed TLS certificates for self-hosted instances
 - Hilt dependency injection setup
 - Navigation component with Compose integration
-- Pull-to-refresh on Dashboard screen
+- Pull-to-refresh on Dashboard and Charges screens
 - Automatic navigation to Dashboard if server already configured
 
 ## [0.1.0] - Unreleased
