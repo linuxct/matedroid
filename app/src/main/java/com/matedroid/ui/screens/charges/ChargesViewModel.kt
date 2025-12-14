@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class ChargesUiState(
@@ -47,7 +46,6 @@ class ChargesViewModel @Inject constructor(
     val uiState: StateFlow<ChargesUiState> = _uiState.asStateFlow()
 
     private var carId: Int? = null
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     init {
         loadCurrency()
@@ -70,18 +68,19 @@ class ChargesViewModel @Inject constructor(
 
     fun setDateFilter(startDate: LocalDate?, endDate: LocalDate?) {
         _uiState.update { it.copy(startDate = startDate, endDate = endDate) }
-        loadCharges()
+        loadCharges(startDate, endDate)
     }
 
     fun clearDateFilter() {
         _uiState.update { it.copy(startDate = null, endDate = null) }
-        loadCharges()
+        loadCharges(null, null)
     }
 
     fun refresh() {
         carId?.let {
             _uiState.update { it.copy(isRefreshing = true) }
-            loadCharges()
+            val state = _uiState.value
+            loadCharges(state.startDate, state.endDate)
         }
     }
 
@@ -89,7 +88,7 @@ class ChargesViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    private fun loadCharges() {
+    private fun loadCharges(startDate: LocalDate? = null, endDate: LocalDate? = null) {
         val id = carId ?: return
 
         viewModelScope.launch {
@@ -98,8 +97,9 @@ class ChargesViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = true) }
             }
 
-            val startDateStr = state.startDate?.format(dateFormatter)
-            val endDateStr = state.endDate?.format(dateFormatter)
+            // API expects RFC3339 format: 2006-01-02T15:04:05Z
+            val startDateStr = startDate?.let { "${it}T00:00:00Z" }
+            val endDateStr = endDate?.let { "${it}T23:59:59Z" }
 
             when (val result = repository.getCharges(id, startDateStr, endDateStr)) {
                 is ApiResult.Success -> {

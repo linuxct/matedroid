@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class DrivesUiState(
@@ -43,7 +42,6 @@ class DrivesViewModel @Inject constructor(
     val uiState: StateFlow<DrivesUiState> = _uiState.asStateFlow()
 
     private var carId: Int? = null
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     fun setCarId(id: Int) {
         if (carId != id) {
@@ -54,18 +52,19 @@ class DrivesViewModel @Inject constructor(
 
     fun setDateFilter(startDate: LocalDate?, endDate: LocalDate?) {
         _uiState.update { it.copy(startDate = startDate, endDate = endDate) }
-        loadDrives()
+        loadDrives(startDate, endDate)
     }
 
     fun clearDateFilter() {
         _uiState.update { it.copy(startDate = null, endDate = null) }
-        loadDrives()
+        loadDrives(null, null)
     }
 
     fun refresh() {
         carId?.let {
             _uiState.update { it.copy(isRefreshing = true) }
-            loadDrives()
+            val state = _uiState.value
+            loadDrives(state.startDate, state.endDate)
         }
     }
 
@@ -73,7 +72,7 @@ class DrivesViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    private fun loadDrives() {
+    private fun loadDrives(startDate: LocalDate? = null, endDate: LocalDate? = null) {
         val id = carId ?: return
 
         viewModelScope.launch {
@@ -82,8 +81,9 @@ class DrivesViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = true) }
             }
 
-            val startDateStr = state.startDate?.format(dateFormatter)
-            val endDateStr = state.endDate?.format(dateFormatter)
+            // API expects RFC3339 format: 2006-01-02T15:04:05Z
+            val startDateStr = startDate?.let { "${it}T00:00:00Z" }
+            val endDateStr = endDate?.let { "${it}T23:59:59Z" }
 
             when (val result = repository.getDrives(id, startDateStr, endDateStr)) {
                 is ApiResult.Success -> {
