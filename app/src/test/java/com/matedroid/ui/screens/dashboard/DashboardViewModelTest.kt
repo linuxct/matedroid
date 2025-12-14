@@ -1,0 +1,182 @@
+package com.matedroid.ui.screens.dashboard
+
+import com.matedroid.data.api.models.CarData
+import com.matedroid.data.api.models.CarStatus
+import com.matedroid.data.repository.ApiResult
+import com.matedroid.data.repository.TeslamateRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class DashboardViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private lateinit var repository: TeslamateRepository
+    private lateinit var viewModel: DashboardViewModel
+
+    private val testCar = CarData(
+        carId = 1,
+        displayName = "Test Tesla",
+        model = "Model 3",
+        vin = "TEST123"
+    )
+
+    private val testStatus = CarStatus(
+        carId = 1,
+        displayName = "Test Tesla",
+        state = "online",
+        batteryLevel = 75,
+        ratedBatteryRangeKm = 300.0,
+        chargeLimitSoc = 80,
+        pluggedIn = false,
+        locked = true
+    )
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        repository = mockk()
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun createViewModel(): DashboardViewModel {
+        return DashboardViewModel(repository)
+    }
+
+    @Test
+    fun `loadCars fetches cars and selects first one`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Success(listOf(testCar))
+        coEvery { repository.getCarStatus(1) } returns ApiResult.Success(testStatus)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertEquals(1, viewModel.uiState.value.cars.size)
+        assertEquals(1, viewModel.uiState.value.selectedCarId)
+        assertEquals(testStatus, viewModel.uiState.value.carStatus)
+    }
+
+    @Test
+    fun `loadCars shows error when api fails`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Error("Network error")
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertEquals("Network error", viewModel.uiState.value.error)
+        assertTrue(viewModel.uiState.value.cars.isEmpty())
+    }
+
+    @Test
+    fun `loadCars handles empty car list`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Success(emptyList())
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertTrue(viewModel.uiState.value.cars.isEmpty())
+        assertNull(viewModel.uiState.value.selectedCarId)
+    }
+
+    @Test
+    fun `selectCar updates selected car and loads status`() = runTest {
+        val car1 = CarData(carId = 1, displayName = "Car 1")
+        val car2 = CarData(carId = 2, displayName = "Car 2")
+        val status2 = testStatus.copy(carId = 2, displayName = "Car 2")
+
+        coEvery { repository.getCars() } returns ApiResult.Success(listOf(car1, car2))
+        coEvery { repository.getCarStatus(1) } returns ApiResult.Success(testStatus)
+        coEvery { repository.getCarStatus(2) } returns ApiResult.Success(status2)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.selectedCarId)
+
+        viewModel.selectCar(2)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.selectedCarId)
+        assertEquals("Car 2", viewModel.uiState.value.carStatus?.displayName)
+    }
+
+    @Test
+    fun `refresh reloads car status`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Success(listOf(testCar))
+        coEvery { repository.getCarStatus(1) } returns ApiResult.Success(testStatus)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val updatedStatus = testStatus.copy(batteryLevel = 80)
+        coEvery { repository.getCarStatus(1) } returns ApiResult.Success(updatedStatus)
+
+        viewModel.refresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isRefreshing)
+        assertEquals(80, viewModel.uiState.value.carStatus?.batteryLevel)
+
+        coVerify(exactly = 2) { repository.getCarStatus(1) }
+    }
+
+    @Test
+    fun `refresh does nothing when no car selected`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Success(emptyList())
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.refresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.getCarStatus(any()) }
+    }
+
+    @Test
+    fun `clearError clears error state`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Error("Test error")
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Test error", viewModel.uiState.value.error)
+
+        viewModel.clearError()
+
+        assertNull(viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `status error is shown when status fetch fails`() = runTest {
+        coEvery { repository.getCars() } returns ApiResult.Success(listOf(testCar))
+        coEvery { repository.getCarStatus(1) } returns ApiResult.Error("Status error")
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Status error", viewModel.uiState.value.error)
+        assertNull(viewModel.uiState.value.carStatus)
+    }
+}

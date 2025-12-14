@@ -1,0 +1,194 @@
+package com.matedroid.ui.screens.settings
+
+import com.matedroid.data.local.AppSettings
+import com.matedroid.data.local.SettingsDataStore
+import com.matedroid.data.repository.ApiResult
+import com.matedroid.data.repository.TeslamateRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SettingsViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private lateinit var settingsDataStore: SettingsDataStore
+    private lateinit var repository: TeslamateRepository
+    private lateinit var viewModel: SettingsViewModel
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        settingsDataStore = mockk()
+        repository = mockk()
+
+        every { settingsDataStore.settings } returns flowOf(AppSettings())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun createViewModel(): SettingsViewModel {
+        return SettingsViewModel(settingsDataStore, repository)
+    }
+
+    @Test
+    fun `initial state loads settings from datastore`() = runTest {
+        val savedSettings = AppSettings(serverUrl = "https://test.com", apiToken = "token123")
+        every { settingsDataStore.settings } returns flowOf(savedSettings)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("https://test.com", viewModel.uiState.value.serverUrl)
+        assertEquals("token123", viewModel.uiState.value.apiToken)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `updateServerUrl updates state`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("https://new-server.com")
+
+        assertEquals("https://new-server.com", viewModel.uiState.value.serverUrl)
+    }
+
+    @Test
+    fun `updateApiToken updates state`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateApiToken("new-token")
+
+        assertEquals("new-token", viewModel.uiState.value.apiToken)
+    }
+
+    @Test
+    fun `testConnection fails with blank url`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("")
+        viewModel.testConnection()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val result = viewModel.uiState.value.testResult
+        assertTrue(result is TestResult.Failure)
+        assertEquals("Server URL is required", (result as TestResult.Failure).message)
+    }
+
+    @Test
+    fun `testConnection fails with invalid url scheme`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("ftp://invalid.com")
+        viewModel.testConnection()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val result = viewModel.uiState.value.testResult
+        assertTrue(result is TestResult.Failure)
+        assertEquals("URL must start with http:// or https://", (result as TestResult.Failure).message)
+    }
+
+    @Test
+    fun `testConnection succeeds with valid url`() = runTest {
+        coEvery { repository.testConnection(any()) } returns ApiResult.Success(Unit)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("https://valid.com")
+        viewModel.testConnection()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val result = viewModel.uiState.value.testResult
+        assertTrue(result is TestResult.Success)
+    }
+
+    @Test
+    fun `testConnection shows failure when api returns error`() = runTest {
+        coEvery { repository.testConnection(any()) } returns ApiResult.Error("Connection refused")
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("https://unreachable.com")
+        viewModel.testConnection()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val result = viewModel.uiState.value.testResult
+        assertTrue(result is TestResult.Failure)
+        assertEquals("Connection refused", (result as TestResult.Failure).message)
+    }
+
+    @Test
+    fun `saveSettings calls datastore and triggers callback`() = runTest {
+        coEvery { settingsDataStore.saveSettings(any(), any()) } returns Unit
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("https://saved.com")
+        viewModel.updateApiToken("saved-token")
+
+        var callbackCalled = false
+        viewModel.saveSettings { callbackCalled = true }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { settingsDataStore.saveSettings("https://saved.com", "saved-token") }
+        assertTrue(callbackCalled)
+    }
+
+    @Test
+    fun `saveSettings fails with blank url`() = runTest {
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("")
+
+        var callbackCalled = false
+        viewModel.saveSettings { callbackCalled = true }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(callbackCalled)
+        assertEquals("Server URL is required", viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `clearTestResult clears test result`() = runTest {
+        coEvery { repository.testConnection(any()) } returns ApiResult.Success(Unit)
+
+        viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateServerUrl("https://test.com")
+        viewModel.testConnection()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.testResult is TestResult.Success)
+
+        viewModel.clearTestResult()
+
+        assertNull(viewModel.uiState.value.testResult)
+    }
+}
