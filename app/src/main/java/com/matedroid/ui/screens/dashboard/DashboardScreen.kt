@@ -963,18 +963,18 @@ private fun QuickLinksRow(
     ) {
         QuickLinkItem(
             title = "Charges",
-            icon = Icons.Filled.BatteryChargingFull,
+            icon = Icons.Filled.ElectricBolt,
             onClick = onNavigateToCharges
-        )
-        QuickLinkItem(
-            title = "Drives",
-            icon = Icons.Filled.DirectionsCar,
-            onClick = onNavigateToDrives
         )
         QuickLinkItem(
             title = "Battery",
             icon = Icons.Filled.Battery5Bar,
             onClick = onNavigateToBattery
+        )
+        QuickLinkItem(
+            title = "Drives",
+            icon = Icons.Filled.DirectionsCar,
+            onClick = onNavigateToDrives
         )
         QuickLinkItem(
             title = "Mileage",
