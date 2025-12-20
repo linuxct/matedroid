@@ -18,6 +18,15 @@ import java.time.YearMonth
 import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
+data class YearlyMileage(
+    val year: Int,
+    val totalDistance: Double,
+    val driveCount: Int,
+    val totalEnergy: Double,
+    val avgBatteryUsage: Double,
+    val drives: List<DriveData>
+)
+
 data class MonthlyMileage(
     val yearMonth: YearMonth,
     val totalDistance: Double,
@@ -41,13 +50,21 @@ data class MileageUiState(
     val isRefreshing: Boolean = false,
     val error: String? = null,
     val allDrives: List<DriveData> = emptyList(),
-    val selectedYear: Int = LocalDate.now().year,
-    val availableYears: List<Int> = emptyList(),
+
+    // Lifetime totals (year overview)
+    val yearlyData: List<YearlyMileage> = emptyList(),
+    val totalLifetimeDistance: Double = 0.0,
+    val avgYearlyDistance: Double = 0.0,
+    val totalLifetimeDriveCount: Int = 0,
+
+    // Year detail view state
+    val selectedYear: Int? = null,
     val monthlyData: List<MonthlyMileage> = emptyList(),
-    val totalDistance: Double = 0.0,
+    val yearTotalDistance: Double = 0.0,
     val avgMonthlyDistance: Double = 0.0,
-    val totalDriveCount: Int = 0,
-    // Detail view state
+    val yearDriveCount: Int = 0,
+
+    // Month detail view state
     val selectedMonth: YearMonth? = null,
     val dailyData: List<DailyMileage> = emptyList()
 )
@@ -82,7 +99,19 @@ class MileageViewModel @Inject constructor(
 
     fun selectYear(year: Int) {
         _uiState.update { it.copy(selectedYear = year) }
-        aggregateByMonth()
+        aggregateByMonth(year)
+    }
+
+    fun clearSelectedYear() {
+        _uiState.update {
+            it.copy(
+                selectedYear = null,
+                monthlyData = emptyList(),
+                yearTotalDistance = 0.0,
+                avgMonthlyDistance = 0.0,
+                yearDriveCount = 0
+            )
+        }
     }
 
     fun selectMonth(yearMonth: YearMonth) {
@@ -114,8 +143,7 @@ class MileageViewModel @Inject constructor(
                             error = null
                         )
                     }
-                    extractAvailableYears(drives)
-                    aggregateByMonth()
+                    aggregateByYear()
                 }
                 is ApiResult.Error -> {
                     _uiState.update {
@@ -130,26 +158,52 @@ class MileageViewModel @Inject constructor(
         }
     }
 
-    private fun extractAvailableYears(drives: List<DriveData>) {
-        val years = drives.mapNotNull { drive ->
-            parseDateTime(drive.startDate)?.year
-        }.distinct().sortedDescending()
+    private fun aggregateByYear() {
+        val drives = _uiState.value.allDrives
 
-        val currentYear = _uiState.value.selectedYear
-        val selectedYear = if (years.contains(currentYear)) currentYear else years.firstOrNull() ?: LocalDate.now().year
+        // Group by year
+        val grouped = drives.groupBy { drive ->
+            parseDateTime(drive.startDate)?.year
+        }.filterKeys { it != null }
+
+        // Create yearly aggregates
+        val yearlyData = grouped.map { (year, yearDrives) ->
+            val totalDistance = yearDrives.sumOf { it.distance ?: 0.0 }
+            val totalEnergy = yearDrives.sumOf { it.energyConsumedNet ?: 0.0 }
+            val batteryUsages = yearDrives.mapNotNull { drive ->
+                val start = drive.startBatteryLevel
+                val end = drive.endBatteryLevel
+                if (start != null && end != null) (start - end).toDouble() else null
+            }
+            val avgBatteryUsage = if (batteryUsages.isNotEmpty()) batteryUsages.average() else 0.0
+
+            YearlyMileage(
+                year = year!!,
+                totalDistance = totalDistance,
+                driveCount = yearDrives.size,
+                totalEnergy = totalEnergy,
+                avgBatteryUsage = avgBatteryUsage,
+                drives = yearDrives
+            )
+        }.sortedByDescending { it.year }
+
+        // Calculate lifetime totals
+        val totalLifetimeDistance = yearlyData.sumOf { it.totalDistance }
+        val totalLifetimeDriveCount = yearlyData.sumOf { it.driveCount }
+        val avgYearlyDistance = if (yearlyData.isNotEmpty()) totalLifetimeDistance / yearlyData.size else 0.0
 
         _uiState.update {
             it.copy(
-                availableYears = years,
-                selectedYear = selectedYear
+                yearlyData = yearlyData,
+                totalLifetimeDistance = totalLifetimeDistance,
+                avgYearlyDistance = avgYearlyDistance,
+                totalLifetimeDriveCount = totalLifetimeDriveCount
             )
         }
     }
 
-    private fun aggregateByMonth() {
-        val state = _uiState.value
-        val drives = state.allDrives
-        val year = state.selectedYear
+    private fun aggregateByMonth(year: Int) {
+        val drives = _uiState.value.allDrives
 
         // Filter drives for selected year
         val yearDrives = drives.filter { drive ->
@@ -188,16 +242,16 @@ class MileageViewModel @Inject constructor(
         }.sortedByDescending { it.yearMonth }
 
         // Calculate totals for selected year
-        val totalDistance = monthlyData.sumOf { it.totalDistance }
-        val totalDriveCount = monthlyData.sumOf { it.driveCount }
-        val avgMonthlyDistance = if (monthlyData.isNotEmpty()) totalDistance / monthlyData.size else 0.0
+        val yearTotalDistance = monthlyData.sumOf { it.totalDistance }
+        val yearDriveCount = monthlyData.sumOf { it.driveCount }
+        val avgMonthlyDistance = if (monthlyData.isNotEmpty()) yearTotalDistance / monthlyData.size else 0.0
 
         _uiState.update {
             it.copy(
                 monthlyData = monthlyData,
-                totalDistance = totalDistance,
+                yearTotalDistance = yearTotalDistance,
                 avgMonthlyDistance = avgMonthlyDistance,
-                totalDriveCount = totalDriveCount
+                yearDriveCount = yearDriveCount
             )
         }
     }
@@ -258,10 +312,16 @@ class MileageViewModel @Inject constructor(
         }
     }
 
-    // Get monthly data for chart (all 12 months, with 0 for missing months)
-    fun getChartData(): List<Pair<Int, Double>> {
+    // Get yearly data for chart
+    fun getYearlyChartData(): List<Pair<Int, Double>> {
         val state = _uiState.value
-        val year = state.selectedYear
+        return state.yearlyData.map { it.year to it.totalDistance }
+            .sortedBy { it.first }
+    }
+
+    // Get monthly data for chart (all 12 months, with 0 for missing months)
+    fun getMonthlyChartData(): List<Pair<Int, Double>> {
+        val state = _uiState.value
         val monthlyMap = state.monthlyData.associate { it.yearMonth.monthValue to it.totalDistance }
 
         return (1..12).map { month ->

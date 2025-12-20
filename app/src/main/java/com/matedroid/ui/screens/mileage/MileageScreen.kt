@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,9 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
@@ -33,10 +30,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +38,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -52,9 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -64,16 +55,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.matedroid.ui.theme.StatusSuccess
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 private val ChartBlue = Color(0xFF42A5F5)
-private val ChartHighlight = Color(0xFF2196F3)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,6 +85,7 @@ fun MileageScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Level 1: Year Overview (main screen)
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -128,17 +117,33 @@ fun MileageScreen(
                         CircularProgressIndicator()
                     }
                 } else {
-                    MileageContent(
+                    YearOverviewContent(
                         uiState = uiState,
-                        chartData = viewModel.getChartData(),
-                        onYearSelect = { viewModel.selectYear(it) },
-                        onMonthClick = { viewModel.selectMonth(it) }
+                        chartData = viewModel.getYearlyChartData(),
+                        onYearClick = { viewModel.selectYear(it) }
                     )
                 }
             }
         }
 
-        // Month detail overlay
+        // Level 2: Year Detail overlay
+        AnimatedVisibility(
+            visible = uiState.selectedYear != null && uiState.selectedMonth == null,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it })
+        ) {
+            uiState.selectedYear?.let { year ->
+                YearDetailScreen(
+                    year = year,
+                    uiState = uiState,
+                    chartData = viewModel.getMonthlyChartData(),
+                    onClose = { viewModel.clearSelectedYear() },
+                    onMonthClick = { viewModel.selectMonth(it) }
+                )
+            }
+        }
+
+        // Level 3: Month Detail overlay
         AnimatedVisibility(
             visible = uiState.selectedMonth != null,
             enter = slideInHorizontally(initialOffsetX = { it }),
@@ -146,7 +151,7 @@ fun MileageScreen(
         ) {
             uiState.selectedMonth?.let { month ->
                 val monthData = uiState.monthlyData.find { it.yearMonth == month }
-                MileageDetailScreen(
+                MonthDetailScreen(
                     yearMonth = month,
                     monthData = monthData,
                     dailyData = uiState.dailyData,
@@ -158,12 +163,15 @@ fun MileageScreen(
     }
 }
 
+// ============================================================================
+// Level 1: Year Overview
+// ============================================================================
+
 @Composable
-private fun MileageContent(
+private fun YearOverviewContent(
     uiState: MileageUiState,
     chartData: List<Pair<Int, Double>>,
-    onYearSelect: (Int) -> Unit,
-    onMonthClick: (YearMonth) -> Unit
+    onYearClick: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -171,35 +179,33 @@ private fun MileageContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Summary stats
+        // Lifetime summary stats
         item {
             SummaryRow(
-                totalDistance = uiState.totalDistance,
-                avgMonthlyDistance = uiState.avgMonthlyDistance,
-                driveCount = uiState.totalDriveCount
+                totalDistance = uiState.totalLifetimeDistance,
+                avgDistance = uiState.avgYearlyDistance,
+                avgLabel = "Avg/Year",
+                driveCount = uiState.totalLifetimeDriveCount
             )
         }
 
-        // Chart
-        item {
-            MileageChartCard(
-                chartData = chartData,
-                selectedYear = uiState.selectedYear,
-                availableYears = uiState.availableYears,
-                onYearSelect = onYearSelect
-            )
+        // Yearly chart
+        if (chartData.isNotEmpty()) {
+            item {
+                YearlyChartCard(chartData = chartData)
+            }
         }
 
-        // Monthly list
-        items(uiState.monthlyData) { monthData ->
-            MonthRow(
-                monthData = monthData,
-                onClick = { onMonthClick(monthData.yearMonth) }
+        // Year list
+        items(uiState.yearlyData) { yearData ->
+            YearRow(
+                yearData = yearData,
+                onClick = { onYearClick(yearData.year) }
             )
         }
 
         // Empty state
-        if (uiState.monthlyData.isEmpty() && !uiState.isLoading) {
+        if (uiState.yearlyData.isEmpty() && !uiState.isLoading) {
             item {
                 Box(
                     modifier = Modifier
@@ -208,7 +214,7 @@ private fun MileageContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No drive data for ${uiState.selectedYear}",
+                        text = "No drive data available",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -219,145 +225,240 @@ private fun MileageContent(
 }
 
 @Composable
-private fun SummaryRow(
-    totalDistance: Double,
-    avgMonthlyDistance: Double,
-    driveCount: Int
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        SummaryItem(
-            icon = Icons.Filled.BarChart,
-            value = "%.1f km".format(totalDistance),
-            label = "Total"
-        )
-        SummaryItem(
-            icon = Icons.Filled.Speed,
-            value = "%.1f km".format(avgMonthlyDistance),
-            label = "Average"
-        )
-        SummaryItem(
-            icon = Icons.Filled.DirectionsCar,
-            value = driveCount.toString(),
-            label = "# of drives"
-        )
-    }
-}
-
-@Composable
-private fun SummaryItem(
-    icon: ImageVector,
-    value: String,
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = ChartBlue,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun MileageChartCard(
-    chartData: List<Pair<Int, Double>>,
-    selectedYear: Int,
-    availableYears: List<Int>,
-    onYearSelect: (Int) -> Unit
-) {
-    var showYearMenu by remember { mutableStateOf(false) }
-
+private fun YearlyChartCard(chartData: List<Pair<Int, Double>>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Mileage by Year",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SimpleBarChart(
+                data = chartData,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                barColor = ChartBlue
+            )
+
+            // X-axis labels (years)
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                chartData.forEach { (year, _) ->
+                    Text(
+                        text = year.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun YearRow(
+    yearData: YearlyMileage,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = yearData.year.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Mileage",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        tint = ChartBlue,
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Filled.Info,
-                        contentDescription = "Info",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
+                    Text(
+                        text = "%.1f km".format(yearData.totalDistance),
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
-                Box {
-                    TextButton(onClick = { showYearMenu = true }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.DirectionsCar,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = yearData.driveCount.toString(),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Level 2: Year Detail
+// ============================================================================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun YearDetailScreen(
+    year: Int,
+    uiState: MileageUiState,
+    chartData: List<Pair<Int, Double>>,
+    onClose: () -> Unit,
+    onMonthClick: (YearMonth) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(year.toString()) },
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Year summary stats
+            item {
+                SummaryRow(
+                    totalDistance = uiState.yearTotalDistance,
+                    avgDistance = uiState.avgMonthlyDistance,
+                    avgLabel = "Avg/Month",
+                    driveCount = uiState.yearDriveCount
+                )
+            }
+
+            // Monthly chart
+            item {
+                MonthlyChartCard(chartData = chartData)
+            }
+
+            // Monthly list
+            items(uiState.monthlyData) { monthData ->
+                MonthRow(
+                    monthData = monthData,
+                    onClick = { onMonthClick(monthData.yearMonth) }
+                )
+            }
+
+            // Empty state
+            if (uiState.monthlyData.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = selectedYear.toString(),
-                            color = ChartBlue
+                            text = "No drive data for $year",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    DropdownMenu(
-                        expanded = showYearMenu,
-                        onDismissRequest = { showYearMenu = false }
-                    ) {
-                        availableYears.forEach { year ->
-                            DropdownMenuItem(
-                                text = { Text(year.toString()) },
-                                onClick = {
-                                    onYearSelect(year)
-                                    showYearMenu = false
-                                }
-                            )
-                        }
-                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Mileage",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = "Info",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bar chart
             SimpleBarChart(
                 data = chartData,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
-                barColor = ChartBlue,
-                showLabels = true
+                barColor = ChartBlue
             )
 
-            // X-axis labels
+            // X-axis labels (months 1-12)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -379,33 +480,6 @@ private fun MileageChartCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-private fun SimpleBarChart(
-    data: List<Pair<Int, Double>>,
-    modifier: Modifier = Modifier,
-    barColor: Color = ChartBlue,
-    showLabels: Boolean = false
-) {
-    val maxValue = data.maxOfOrNull { it.second } ?: 1.0
-
-    Canvas(modifier = modifier) {
-        val barWidth = size.width / data.size * 0.7f
-        val spacing = size.width / data.size * 0.3f / 2
-
-        data.forEachIndexed { index, (_, value) ->
-            val barHeight = if (maxValue > 0) (value / maxValue * size.height).toFloat() else 0f
-            val x = index * (barWidth + spacing * 2) + spacing
-            val y = size.height - barHeight
-
-            drawRect(
-                color = barColor,
-                topLeft = Offset(x, y),
-                size = Size(barWidth, barHeight)
             )
         }
     }
@@ -480,10 +554,13 @@ private fun MonthRow(
     }
 }
 
-// Month Detail Screen
+// ============================================================================
+// Level 3: Month Detail
+// ============================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MileageDetailScreen(
+private fun MonthDetailScreen(
     yearMonth: YearMonth,
     monthData: MonthlyMileage?,
     dailyData: List<DailyMileage>,
@@ -569,9 +646,7 @@ private fun MonthSummaryCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -648,6 +723,93 @@ private fun MonthSummaryCard(
     }
 }
 
+// ============================================================================
+// Shared Components
+// ============================================================================
+
+@Composable
+private fun SummaryRow(
+    totalDistance: Double,
+    avgDistance: Double,
+    avgLabel: String,
+    driveCount: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        SummaryItem(
+            icon = Icons.Filled.BarChart,
+            value = "%.1f km".format(totalDistance),
+            label = "Total"
+        )
+        SummaryItem(
+            icon = Icons.Filled.Speed,
+            value = "%.1f km".format(avgDistance),
+            label = avgLabel
+        )
+        SummaryItem(
+            icon = Icons.Filled.DirectionsCar,
+            value = driveCount.toString(),
+            label = "# of drives"
+        )
+    }
+}
+
+@Composable
+private fun SummaryItem(
+    icon: ImageVector,
+    value: String,
+    label: String
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = ChartBlue,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SimpleBarChart(
+    data: List<Pair<Int, Double>>,
+    modifier: Modifier = Modifier,
+    barColor: Color = ChartBlue
+) {
+    val maxValue = data.maxOfOrNull { it.second } ?: 1.0
+
+    Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
+        val barWidth = size.width / data.size * 0.7f
+        val spacing = size.width / data.size * 0.3f / 2
+
+        data.forEachIndexed { index, (_, value) ->
+            val barHeight = if (maxValue > 0) (value / maxValue * size.height).toFloat() else 0f
+            val x = index * (barWidth + spacing * 2) + spacing
+            val y = size.height - barHeight
+
+            drawRect(
+                color = barColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight)
+            )
+        }
+    }
+}
+
 @Composable
 private fun StatChip(
     modifier: Modifier = Modifier,
@@ -714,9 +876,7 @@ private fun DailyChartCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -776,9 +936,7 @@ private fun DailyChartCard(
 }
 
 @Composable
-private fun DayTripRow(
-    dayData: DailyMileage
-) {
+private fun DayTripRow(dayData: DailyMileage) {
     val dayOfWeek = dayData.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
     val dateStr = "%d %s".format(
         dayData.date.dayOfMonth,
@@ -798,9 +956,7 @@ private fun DayTripRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Day info
-            Column(
-                modifier = Modifier.width(60.dp)
-            ) {
+            Column(modifier = Modifier.width(60.dp)) {
                 Text(
                     text = dayOfWeek,
                     style = MaterialTheme.typography.titleMedium,
