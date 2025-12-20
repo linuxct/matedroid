@@ -4,11 +4,13 @@ A native Android application for viewing Tesla vehicle data from your self-hoste
 
 ## Features
 
-- **Dashboard** - Real-time vehicle status at a glance
+- **Dashboard** - Real-time vehicle status at a glance with 3D car image matching your vehicle's color and wheels
 - **Charging History** - View all charging sessions with statistics and charts
-- **Drive History** - Track trips with efficiency metrics
+- **Charge Details** - Interactive map and detailed power/voltage/temperature charts
+- **Drive History** - Track trips with efficiency metrics and route visualization
 - **Battery Health** - Monitor battery degradation over time
 - **Software Updates** - Track update history
+- **Dark Mode** - Follows system theme
 
 ## Requirements
 
@@ -70,6 +72,24 @@ matedroid/
 - **Networking**: Retrofit + OkHttp + Moshi
 - **Local Storage**: DataStore
 - **Charts**: Vico
+- **Maps**: osmdroid (OpenStreetMap)
+
+### Utility Scripts
+
+#### `util/fetch_tesla_assets.py`
+
+Python script to download Tesla car 3D renders from Tesla's compositor service. Requires [uv](https://github.com/astral-sh/uv) for dependency management.
+
+```bash
+# Download all car images (Model 3 & Y, various colors/wheels)
+./util/fetch_tesla_assets.py
+
+# Preview what would be downloaded
+./util/fetch_tesla_assets.py --dry-run
+
+# Custom output directory
+./util/fetch_tesla_assets.py --output-dir /path/to/assets
+```
 
 ### Running Tests
 
