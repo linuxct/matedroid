@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -73,6 +74,7 @@ fun DashboardScreen(
     onNavigateToCharges: (carId: Int) -> Unit = {},
     onNavigateToDrives: (carId: Int) -> Unit = {},
     onNavigateToBattery: (carId: Int, efficiency: Double?) -> Unit = { _, _ -> },
+    onNavigateToMileage: (carId: Int) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -122,6 +124,9 @@ fun DashboardScreen(
                             uiState.selectedCarId?.let { carId ->
                                 onNavigateToBattery(carId, uiState.selectedCarEfficiency)
                             }
+                        },
+                        onNavigateToMileage = {
+                            uiState.selectedCarId?.let { onNavigateToMileage(it) }
                         }
                     )
                 }
@@ -203,7 +208,8 @@ private fun DashboardContent(
     status: CarStatus,
     onNavigateToCharges: () -> Unit = {},
     onNavigateToDrives: () -> Unit = {},
-    onNavigateToBattery: () -> Unit = {}
+    onNavigateToBattery: () -> Unit = {},
+    onNavigateToMileage: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -241,6 +247,7 @@ private fun DashboardContent(
             onNavigateToCharges = onNavigateToCharges,
             onNavigateToDrives = onNavigateToDrives,
             onNavigateToBattery = onNavigateToBattery,
+            onNavigateToMileage = onNavigateToMileage,
             modifier = Modifier.padding(16.dp)
         )
     }
@@ -610,6 +617,7 @@ private fun QuickLinksRow(
     onNavigateToCharges: () -> Unit,
     onNavigateToDrives: () -> Unit,
     onNavigateToBattery: () -> Unit,
+    onNavigateToMileage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -631,8 +639,11 @@ private fun QuickLinksRow(
             icon = Icons.Filled.Battery5Bar,
             onClick = onNavigateToBattery
         )
-        // Placeholder for future link (Updates, etc.)
-        Spacer(modifier = Modifier.weight(1f))
+        QuickLinkItem(
+            title = "Mileage",
+            icon = Icons.Filled.Timeline,
+            onClick = onNavigateToMileage
+        )
     }
 }
 
