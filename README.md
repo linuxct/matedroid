@@ -60,6 +60,8 @@ matedroid/
 │   ├── ui/             # UI layer (screens, components, theme)
 │   └── di/             # Dependency injection modules
 ├── gradle/             # Gradle wrapper and version catalog
+├── util/               # Utility scripts
+├── ASSETS.md           # Tesla car image asset documentation
 └── PLAN.md             # Detailed implementation plan
 ```
 
@@ -90,6 +92,8 @@ Python script to download Tesla car 3D renders from Tesla's compositor service. 
 # Custom output directory
 ./util/fetch_tesla_assets.py --output-dir /path/to/assets
 ```
+
+See [ASSETS.md](ASSETS.md) for detailed documentation on Tesla compositor APIs, color/wheel code mappings, and troubleshooting.
 
 ### Running Tests
 
