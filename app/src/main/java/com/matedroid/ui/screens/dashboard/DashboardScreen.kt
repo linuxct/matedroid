@@ -1,6 +1,7 @@
 package com.matedroid.ui.screens.dashboard
 
 import android.graphics.Paint
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -431,7 +432,81 @@ private fun BatteryCard(status: CarStatus, units: Units?) {
                     )
                 }
             }
+
+            // Charging progress bar - only shown when charging
+            if (status.isCharging) {
+                val chargeLimit = status.chargeLimitSoc ?: 100
+                Spacer(modifier = Modifier.height(12.dp))
+                ChargingProgressBar(
+                    currentLevel = batteryLevel,
+                    targetLevel = chargeLimit,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${status.chargerPower ?: 0} kW",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = StatusSuccess
+                    )
+                    Text(
+                        text = status.timeToFullCharge?.let { formatHoursMinutes(it) + " remaining" } ?: "",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun ChargingProgressBar(
+    currentLevel: Int,
+    targetLevel: Int,
+    modifier: Modifier = Modifier
+) {
+    val currentFraction = currentLevel / 100f
+    val targetFraction = targetLevel / 100f
+    val solidGreen = StatusSuccess
+    val dimmedGreen = StatusSuccess.copy(alpha = 0.3f)
+    val backgroundColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f)
+
+    Canvas(
+        modifier = modifier
+            .height(8.dp)
+            .clip(RoundedCornerShape(4.dp))
+    ) {
+        val width = size.width
+        val height = size.height
+
+        // Background (remaining after target)
+        drawRect(
+            color = backgroundColor,
+            size = size
+        )
+
+        // Dimmed green for target area (from current to target)
+        if (targetFraction > currentFraction) {
+            drawRect(
+                color = dimmedGreen,
+                topLeft = androidx.compose.ui.geometry.Offset(width * currentFraction, 0f),
+                size = androidx.compose.ui.geometry.Size(
+                    width * (targetFraction - currentFraction),
+                    height
+                )
+            )
+        }
+
+        // Solid green for current charge level
+        drawRect(
+            color = solidGreen,
+            size = androidx.compose.ui.geometry.Size(width * currentFraction, height)
+        )
     }
 }
 
