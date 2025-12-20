@@ -144,6 +144,7 @@ fun DashboardScreen(
                         status = uiState.carStatus!!,
                         units = uiState.units,
                         carModel = uiState.selectedCarModel,
+                        carTrimBadging = uiState.selectedCarTrimBadging,
                         carExterior = uiState.selectedCarExterior,
                         onNavigateToCharges = {
                             uiState.selectedCarId?.let { onNavigateToCharges(it) }
@@ -243,6 +244,7 @@ private fun DashboardContent(
     status: CarStatus,
     units: Units? = null,
     carModel: String? = null,
+    carTrimBadging: String? = null,
     carExterior: CarExterior? = null,
     onNavigateToCharges: () -> Unit = {},
     onNavigateToDrives: () -> Unit = {},
@@ -265,6 +267,7 @@ private fun DashboardContent(
                 status = status,
                 units = units,
                 carModel = carModel,
+                carTrimBadging = carTrimBadging,
                 carExterior = carExterior
             )
 
@@ -291,15 +294,17 @@ private fun DashboardContent(
 @Composable
 private fun CarImage(
     carModel: String?,
+    carTrimBadging: String?,
     carExterior: CarExterior?,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val assetPath = remember(carModel, carExterior) {
+    val assetPath = remember(carModel, carTrimBadging, carExterior) {
         CarImageResolver.getAssetPath(
             model = carModel,
             exteriorColor = carExterior?.exteriorColor,
-            wheelType = carExterior?.wheelType
+            wheelType = carExterior?.wheelType,
+            trimBadging = carTrimBadging
         )
     }
 
@@ -417,6 +422,7 @@ private fun BatteryCard(
     status: CarStatus,
     units: Units?,
     carModel: String? = null,
+    carTrimBadging: String? = null,
     carExterior: CarExterior? = null
 ) {
     val batteryLevel = status.batteryLevel ?: 0
@@ -440,6 +446,7 @@ private fun BatteryCard(
             // Car image at the top
             CarImage(
                 carModel = carModel,
+                carTrimBadging = carTrimBadging,
                 carExterior = carExterior,
                 modifier = Modifier.fillMaxWidth()
             )

@@ -36,6 +36,9 @@ data class DashboardUiState(
     val selectedCarModel: String?
         get() = selectedCar?.carDetails?.model
 
+    val selectedCarTrimBadging: String?
+        get() = selectedCar?.carDetails?.trimBadging
+
     val selectedCarExterior: CarExterior?
         get() = selectedCar?.carExterior
 }

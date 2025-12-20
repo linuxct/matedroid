@@ -5,20 +5,19 @@ package com.matedroid.domain.model
  *
  * Maps TeslamateAPI values (e.g., "MidnightSilver", "Pinwheel18CapKit")
  * to Tesla compositor codes (e.g., "PMNG", "W38B") to construct asset paths.
+ *
+ * Supports both legacy models and new Highland/Juniper models:
+ * - Legacy Model 3 (pre-2024): m3_{color}_{wheel}.png
+ * - Highland Model 3 (2024+): m3h_{color}_{wheel}.jpg or m3hp_{color}_{wheel}.jpg
+ * - Legacy Model Y (pre-2025): my_{color}_{wheel}.png
+ * - Juniper Model Y (2025+): myj_{color}_{wheel}.jpg
  */
 object CarImageResolver {
-
-    // Model code mappings (TeslamateAPI -> Compositor)
-    private val MODEL_CODES = mapOf(
-        "3" to "m3",
-        "Y" to "my",
-        "S" to "ms",
-        "X" to "mx"
-    )
 
     // Color code mappings (TeslamateAPI -> Compositor)
     // Keys are normalized (lowercase, no spaces)
     private val COLOR_CODES = mapOf(
+        // Legacy colors (available on old models)
         "black" to "PBSB",
         "solidblack" to "PBSB",
         "obsidianblack" to "PMBL",
@@ -34,15 +33,34 @@ object CarImageResolver {
         "blue" to "PPSB",
         "red" to "PPMR",
         "redmulticoat" to "PPMR",
+        // New Highland/Juniper colors
         "quicksilver" to "PN00",
         "stealthgrey" to "PN01",
         "stealthgray" to "PN01",
         "midnightcherryred" to "PR00",
-        "ultrared" to "PR01"
+        "ultrared" to "PR01",
+        "blackdiamond" to "PX02"
     )
 
-    // Wheel code mappings per model
+    // Colors only available on Highland/Juniper
+    private val HIGHLAND_JUNIPER_COLORS = setOf("PN00", "PN01", "PR01", "PX02")
+
+    // Legacy Model 3 valid colors
+    private val LEGACY_M3_COLORS = setOf("PBSB", "PMNG", "PMSS", "PPSW", "PPSB", "PPMR", "PMBL")
+
+    // Highland Model 3 valid colors
+    private val HIGHLAND_M3_COLORS = setOf("PBSB", "PPSW", "PPSB", "PN00", "PN01", "PR01", "PX02")
+
+    // Legacy Model Y valid colors
+    private val LEGACY_MY_COLORS = setOf("PBSB", "PMNG", "PPSW", "PPSB", "PPMR")
+
+    // Juniper Model Y valid colors
+    private val JUNIPER_MY_COLORS = setOf("PPSW", "PN01", "PX02")
+
+    // Wheel code mappings per model variant
     // Keys are patterns that match the start of the TeslamateAPI wheel type
+
+    // Legacy Model 3 wheels
     private val WHEEL_PATTERNS_M3 = listOf(
         "pinwheel18" to "W38B",
         "aero18" to "W38B",
@@ -50,15 +68,28 @@ object CarImageResolver {
         "stiletto19" to "W39B",
         "sport19" to "W39B",
         "performance20" to "W32P",
-        "19" to "W39B",  // Default 19" to Sport
-        "20" to "W32P",  // Default 20" to Performance
-        "18" to "W38B"   // Default 18" to Aero
+        "19" to "W39B",
+        "20" to "W32P",
+        "18" to "W38B"
     )
 
+    // Highland Model 3 wheels
+    private val WHEEL_PATTERNS_M3H = listOf(
+        "photon18" to "W38A",
+        "18" to "W38A"
+    )
+
+    // Highland Model 3 Performance wheels
+    private val WHEEL_PATTERNS_M3HP = listOf(
+        "performance20" to "W30P",
+        "20" to "W30P"
+    )
+
+    // Legacy Model Y wheels
     private val WHEEL_PATTERNS_MY = listOf(
+        "gemini19" to "WY19B",
         "pinwheel18" to "WY18B",
         "aero18" to "WY18B",
-        "gemini19" to "WY19B",
         "aeroturbine19" to "WY19B",
         "stiletto19" to "WY19B",
         "sport19" to "WY19B",
@@ -66,20 +97,35 @@ object CarImageResolver {
         "induction20" to "WY0S",
         "performance20" to "WY20P",
         "uberturbine21" to "WY1S",
-        "21" to "WY1S",  // Default 21" to Uberturbine
-        "20" to "WY0S",  // Default 20" to Induction
-        "19" to "WY19B", // Default 19" to Sport
-        "18" to "WY18B"  // Default 18" to Aero
+        "21" to "WY1S",
+        "20" to "WY0S",
+        "19" to "WY19B",
+        "18" to "WY18B"
     )
 
-    // Default wheels per model (most common configuration)
+    // Juniper Model Y wheels
+    private val WHEEL_PATTERNS_MYJ = listOf(
+        "photon18" to "WY18P",
+        "18" to "WY18P"
+    )
+
+    // Default wheels per model variant
     private val DEFAULT_WHEELS = mapOf(
-        "m3" to "W38B",  // 18" Aero
-        "my" to "WY19B"  // 19" Sport
+        "m3" to "W38B",
+        "m3h" to "W38A",
+        "m3hp" to "W30P",
+        "my" to "WY19B",
+        "myj" to "WY18P"
     )
 
-    // Default color
-    private const val DEFAULT_COLOR = "PPSW" // Pearl White
+    // Default colors per model variant
+    private val DEFAULT_COLORS = mapOf(
+        "m3" to "PPSW",
+        "m3h" to "PPSW",
+        "m3hp" to "PPSW",
+        "my" to "PPSW",
+        "myj" to "PPSW"
+    )
 
     /**
      * Get the asset path for a car image based on its configuration.
@@ -87,27 +133,39 @@ object CarImageResolver {
      * @param model The car model from TeslamateAPI (e.g., "3", "Y")
      * @param exteriorColor The exterior color from TeslamateAPI (e.g., "MidnightSilver")
      * @param wheelType The wheel type from TeslamateAPI (e.g., "Pinwheel18CapKit")
+     * @param trimBadging The trim badging from TeslamateAPI (e.g., "74D", "P74D") - helps detect Performance
      * @return The asset path (e.g., "car_images/m3_PMNG_W38B.png")
      */
     fun getAssetPath(
         model: String?,
         exteriorColor: String?,
-        wheelType: String?
+        wheelType: String?,
+        trimBadging: String? = null
     ): String {
-        val modelCode = mapModel(model) ?: return getDefaultAssetPath(model)
-        val colorCode = mapColor(exteriorColor) ?: DEFAULT_COLOR
-        val wheelCode = mapWheel(modelCode, wheelType) ?: DEFAULT_WHEELS[modelCode] ?: "W38B"
+        val colorCode = mapColor(exteriorColor)
+        val modelVariant = determineModelVariant(model, colorCode, wheelType, trimBadging)
+        val resolvedColorCode = colorCode ?: DEFAULT_COLORS[modelVariant] ?: "PPSW"
+        val wheelCode = mapWheel(modelVariant, wheelType) ?: DEFAULT_WHEELS[modelVariant] ?: "W38B"
 
-        return "car_images/${modelCode}_${colorCode}_${wheelCode}.png"
+        // Validate the color is available for this model variant, fallback if not
+        val validatedColorCode = validateColorForVariant(modelVariant, resolvedColorCode)
+
+        val ext = if (modelVariant in setOf("m3h", "m3hp", "myj")) "jpg" else "png"
+        return "car_images/${modelVariant}_${validatedColorCode}_${wheelCode}.${ext}"
     }
 
     /**
      * Get the default asset path for a model when configuration is unavailable.
      */
     fun getDefaultAssetPath(model: String?): String {
-        val modelCode = mapModel(model) ?: "m3"
-        val defaultWheel = DEFAULT_WHEELS[modelCode] ?: "W38B"
-        return "car_images/${modelCode}_${DEFAULT_COLOR}_${defaultWheel}.png"
+        val modelVariant = when (model?.uppercase()) {
+            "3" -> "m3"
+            "Y" -> "my"
+            else -> "m3"
+        }
+        val defaultColor = DEFAULT_COLORS[modelVariant] ?: "PPSW"
+        val defaultWheel = DEFAULT_WHEELS[modelVariant] ?: "W38B"
+        return "car_images/${modelVariant}_${defaultColor}_${defaultWheel}.png"
     }
 
     /**
@@ -118,29 +176,83 @@ object CarImageResolver {
         model: String?,
         exteriorColor: String?,
         wheelType: String?,
+        trimBadging: String? = null,
         assetExists: (String) -> Boolean
     ): String {
         // Try exact match first
-        val exactPath = getAssetPath(model, exteriorColor, wheelType)
+        val exactPath = getAssetPath(model, exteriorColor, wheelType, trimBadging)
         if (assetExists(exactPath)) return exactPath
 
         // Try with default wheel
-        val modelCode = mapModel(model) ?: "m3"
-        val colorCode = mapColor(exteriorColor) ?: DEFAULT_COLOR
-        val defaultWheelPath = "car_images/${modelCode}_${colorCode}_${DEFAULT_WHEELS[modelCode]}.png"
+        val colorCode = mapColor(exteriorColor)
+        val modelVariant = determineModelVariant(model, colorCode, wheelType, trimBadging)
+        val validatedColor = validateColorForVariant(modelVariant, colorCode ?: DEFAULT_COLORS[modelVariant] ?: "PPSW")
+        val ext = if (modelVariant in setOf("m3h", "m3hp", "myj")) "jpg" else "png"
+
+        val defaultWheelPath = "car_images/${modelVariant}_${validatedColor}_${DEFAULT_WHEELS[modelVariant]}.${ext}"
         if (assetExists(defaultWheelPath)) return defaultWheelPath
 
         // Try with default color
-        val wheelCode = mapWheel(modelCode, wheelType) ?: DEFAULT_WHEELS[modelCode] ?: "W38B"
-        val defaultColorPath = "car_images/${modelCode}_${DEFAULT_COLOR}_${wheelCode}.png"
+        val wheelCode = mapWheel(modelVariant, wheelType) ?: DEFAULT_WHEELS[modelVariant] ?: "W38B"
+        val defaultColorPath = "car_images/${modelVariant}_${DEFAULT_COLORS[modelVariant]}_${wheelCode}.${ext}"
         if (assetExists(defaultColorPath)) return defaultColorPath
 
         // Fall back to complete default
         return getDefaultAssetPath(model)
     }
 
-    private fun mapModel(model: String?): String? {
-        return model?.let { MODEL_CODES[it.uppercase()] ?: MODEL_CODES[it] }
+    /**
+     * Determine which model variant to use based on available data.
+     *
+     * Highland/Juniper detection heuristics:
+     * 1. If color is a new Highland/Juniper-only color (PN00, PN01, PR01, PX02), use Highland/Juniper
+     * 2. Otherwise, assume legacy
+     */
+    private fun determineModelVariant(
+        model: String?,
+        colorCode: String?,
+        wheelType: String?,
+        trimBadging: String?
+    ): String {
+        val baseModel = model?.uppercase() ?: "3"
+        val isHighlandJuniperColor = colorCode in HIGHLAND_JUNIPER_COLORS
+
+        // Check for Performance trim
+        val isPerformance = trimBadging?.uppercase()?.startsWith("P") == true ||
+                trimBadging?.lowercase()?.contains("performance") == true
+
+        return when (baseModel) {
+            "3" -> when {
+                isHighlandJuniperColor && isPerformance -> "m3hp"
+                isHighlandJuniperColor -> "m3h"
+                else -> "m3"
+            }
+            "Y" -> when {
+                isHighlandJuniperColor -> "myj"
+                else -> "my"
+            }
+            else -> "m3"
+        }
+    }
+
+    /**
+     * Validate that a color is available for the model variant.
+     * Returns the color if valid, or a fallback color if not.
+     */
+    private fun validateColorForVariant(modelVariant: String, colorCode: String): String {
+        val validColors = when (modelVariant) {
+            "m3" -> LEGACY_M3_COLORS
+            "m3h", "m3hp" -> HIGHLAND_M3_COLORS
+            "my" -> LEGACY_MY_COLORS
+            "myj" -> JUNIPER_MY_COLORS
+            else -> LEGACY_M3_COLORS
+        }
+
+        return if (colorCode in validColors) {
+            colorCode
+        } else {
+            DEFAULT_COLORS[modelVariant] ?: "PPSW"
+        }
     }
 
     private fun mapColor(color: String?): String? {
@@ -149,15 +261,18 @@ object CarImageResolver {
         return COLOR_CODES[normalized]
     }
 
-    private fun mapWheel(modelCode: String, wheelType: String?): String? {
+    private fun mapWheel(modelVariant: String, wheelType: String?): String? {
         if (wheelType == null) return null
 
         val normalized = wheelType.lowercase().replace(" ", "").replace("-", "").replace("_", "")
 
-        val patterns = when (modelCode) {
+        val patterns = when (modelVariant) {
             "m3" -> WHEEL_PATTERNS_M3
+            "m3h" -> WHEEL_PATTERNS_M3H
+            "m3hp" -> WHEEL_PATTERNS_M3HP
             "my" -> WHEEL_PATTERNS_MY
-            else -> WHEEL_PATTERNS_M3 // Default to Model 3 patterns
+            "myj" -> WHEEL_PATTERNS_MYJ
+            else -> WHEEL_PATTERNS_M3
         }
 
         // Find the first pattern that matches the start of the wheel type
