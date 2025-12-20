@@ -1,5 +1,6 @@
 package com.matedroid.ui.screens.charges
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,6 +72,7 @@ enum class DateFilter(val label: String, val days: Long?) {
 fun ChargesScreen(
     carId: Int,
     onNavigateBack: () -> Unit,
+    onNavigateToChargeDetail: (Int) -> Unit = {},
     viewModel: ChargesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -138,7 +140,8 @@ fun ChargesScreen(
                     summary = uiState.summary,
                     currencySymbol = uiState.currencySymbol,
                     selectedFilter = selectedFilter,
-                    onFilterSelected = { applyDateFilter(it) }
+                    onFilterSelected = { applyDateFilter(it) },
+                    onChargeClick = onNavigateToChargeDetail
                 )
             }
         }
@@ -152,7 +155,8 @@ private fun ChargesContent(
     summary: ChargesSummary,
     currencySymbol: String,
     selectedFilter: DateFilter,
-    onFilterSelected: (DateFilter) -> Unit
+    onFilterSelected: (DateFilter) -> Unit,
+    onChargeClick: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -203,7 +207,11 @@ private fun ChargesContent(
             }
         } else {
             items(charges, key = { it.chargeId }) { charge ->
-                ChargeItem(charge = charge, currencySymbol = currencySymbol)
+                ChargeItem(
+                    charge = charge,
+                    currencySymbol = currencySymbol,
+                    onClick = { onChargeClick(charge.chargeId) }
+                )
             }
         }
     }
@@ -323,9 +331,15 @@ private fun SummaryItem(
 }
 
 @Composable
-private fun ChargeItem(charge: ChargeData, currencySymbol: String) {
+private fun ChargeItem(
+    charge: ChargeData,
+    currencySymbol: String,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )

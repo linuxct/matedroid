@@ -53,7 +53,19 @@ data class ChargeRange(
 
 @JsonClass(generateAdapter = true)
 data class ChargeDetailResponse(
-    @Json(name = "data") val data: ChargeDetail? = null
+    @Json(name = "data") val data: ChargeDetailData? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class ChargeDetailData(
+    @Json(name = "car") val car: ChargeDetailCar? = null,
+    @Json(name = "charge") val charge: ChargeDetail? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class ChargeDetailCar(
+    @Json(name = "car_id") val carId: Int? = null,
+    @Json(name = "car_name") val carName: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -74,16 +86,41 @@ data class ChargeDetail(
     @Json(name = "odometer") val odometer: Double? = null,
     @Json(name = "latitude") val latitude: Double? = null,
     @Json(name = "longitude") val longitude: Double? = null,
-    @Json(name = "positions") val positions: List<ChargePosition>? = null
+    @Json(name = "charge_details") val chargePoints: List<ChargePoint>? = null
 ) {
     val startBatteryLevel: Int? get() = batteryDetails?.startBatteryLevel
     val endBatteryLevel: Int? get() = batteryDetails?.endBatteryLevel
 }
 
 @JsonClass(generateAdapter = true)
-data class ChargePosition(
+data class ChargePoint(
     @Json(name = "date") val date: String? = null,
     @Json(name = "battery_level") val batteryLevel: Int? = null,
     @Json(name = "charge_energy_added") val chargeEnergyAdded: Double? = null,
-    @Json(name = "charger_power") val chargerPower: Int? = null
+    @Json(name = "charger_details") val chargerDetails: ChargerDetails? = null,
+    @Json(name = "outside_temp") val outsideTemp: Double? = null,
+    @Json(name = "battery_info") val batteryInfo: ChargeBatteryInfo? = null
+) {
+    // Convenience accessors
+    val chargerPower: Int? get() = chargerDetails?.chargerPower
+    val chargerVoltage: Int? get() = chargerDetails?.chargerVoltage
+    val chargerCurrent: Int? get() = chargerDetails?.chargerActualCurrent
+}
+
+@JsonClass(generateAdapter = true)
+data class ChargerDetails(
+    @Json(name = "charger_power") val chargerPower: Int? = null,
+    @Json(name = "charger_voltage") val chargerVoltage: Int? = null,
+    @Json(name = "charger_actual_current") val chargerActualCurrent: Int? = null,
+    @Json(name = "charger_phases") val chargerPhases: Int? = null,
+    @Json(name = "fast_charger_present") val fastChargerPresent: Boolean? = null,
+    @Json(name = "fast_charger_brand") val fastChargerBrand: String? = null,
+    @Json(name = "fast_charger_type") val fastChargerType: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class ChargeBatteryInfo(
+    @Json(name = "ideal_battery_range_km") val idealBatteryRangeKm: Double? = null,
+    @Json(name = "rated_battery_range_km") val ratedBatteryRangeKm: Double? = null,
+    @Json(name = "usable_battery_level") val usableBatteryLevel: Int? = null
 )
