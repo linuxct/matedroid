@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.matedroid.data.api.models.BatteryHealth
 import com.matedroid.data.api.models.CarStatus
+import com.matedroid.data.api.models.Units
 import com.matedroid.data.repository.ApiResult
 import com.matedroid.data.repository.TeslamateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,7 @@ data class BatteryUiState(
     val error: String? = null,
     val batteryHealth: BatteryHealth? = null,
     val carStatus: CarStatus? = null,
+    val units: Units? = null,
     val originalCapacity: Double = 82.0, // Default for Model 3 LR, could be fetched from car details
     val ratedEfficiency: Double = 0.0,
     val showDetail: Boolean = false
@@ -104,7 +106,8 @@ class BatteryViewModel @Inject constructor(
                             isLoading = false,
                             isRefreshing = false,
                             batteryHealth = healthResult.data,
-                            carStatus = statusResult.data,
+                            carStatus = statusResult.data.status,
+                            units = statusResult.data.units,
                             error = null
                         )
                     }

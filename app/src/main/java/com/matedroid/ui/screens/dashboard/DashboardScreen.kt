@@ -58,6 +58,8 @@ import com.matedroid.data.api.models.BatteryDetails
 import com.matedroid.data.api.models.CarGeodata
 import com.matedroid.data.api.models.CarStatus
 import com.matedroid.data.api.models.CarStatusDetails
+import com.matedroid.data.api.models.Units
+import com.matedroid.domain.model.UnitFormatter
 import com.matedroid.data.api.models.CarVersions
 import com.matedroid.data.api.models.ChargingDetails
 import com.matedroid.data.api.models.ClimateDetails
@@ -114,6 +116,7 @@ fun DashboardScreen(
                 uiState.carStatus != null -> {
                     DashboardContent(
                         status = uiState.carStatus!!,
+                        units = uiState.units,
                         onNavigateToCharges = {
                             uiState.selectedCarId?.let { onNavigateToCharges(it) }
                         },
@@ -206,6 +209,7 @@ private fun ErrorContent(message: String) {
 @Composable
 private fun DashboardContent(
     status: CarStatus,
+    units: Units? = null,
     onNavigateToCharges: () -> Unit = {},
     onNavigateToDrives: () -> Unit = {},
     onNavigateToBattery: () -> Unit = {},
@@ -223,10 +227,10 @@ private fun DashboardContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Compact status indicators (right-aligned)
-            StatusIndicatorsRow(status)
+            StatusIndicatorsRow(status, units)
 
             // Battery Section
-            BatteryCard(status)
+            BatteryCard(status, units)
 
             // Charging Section (if plugged in)
             if (status.pluggedIn == true) {
@@ -239,7 +243,7 @@ private fun DashboardContent(
             }
 
             // Vehicle Info Section
-            VehicleInfoCard(status)
+            VehicleInfoCard(status, units)
         }
 
         // Fixed bottom quick links
@@ -254,7 +258,7 @@ private fun DashboardContent(
 }
 
 @Composable
-private fun StatusIndicatorsRow(status: CarStatus) {
+private fun StatusIndicatorsRow(status: CarStatus, units: Units?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -305,7 +309,7 @@ private fun StatusIndicatorsRow(status: CarStatus) {
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
-                text = status.insideTemp?.let { "%.0f°".format(it) } ?: "--",
+                text = status.insideTemp?.let { UnitFormatter.formatTemperature(it, units) } ?: "--",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -321,7 +325,7 @@ private fun StatusIndicatorsRow(status: CarStatus) {
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
-                text = status.outsideTemp?.let { "%.0f°".format(it) } ?: "--",
+                text = status.outsideTemp?.let { UnitFormatter.formatTemperature(it, units) } ?: "--",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -330,7 +334,7 @@ private fun StatusIndicatorsRow(status: CarStatus) {
 }
 
 @Composable
-private fun BatteryCard(status: CarStatus) {
+private fun BatteryCard(status: CarStatus, units: Units?) {
     val batteryLevel = status.batteryLevel ?: 0
     val batteryColor = when {
         batteryLevel < 20 -> StatusError
@@ -396,7 +400,7 @@ private fun BatteryCard(status: CarStatus) {
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = "${status.ratedBatteryRangeKm?.roundToInt() ?: "--"} km",
+                        text = status.ratedBatteryRangeKm?.let { UnitFormatter.formatDistance(it, units, 0) } ?: "--",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -537,7 +541,8 @@ private fun LocationCard(geofence: String, status: CarStatus) {
 }
 
 @Composable
-private fun VehicleInfoCard(status: CarStatus) {
+private fun VehicleInfoCard(status: CarStatus, units: Units?) {
+    val distanceUnit = UnitFormatter.getDistanceUnit(units)
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -566,7 +571,10 @@ private fun VehicleInfoCard(status: CarStatus) {
             ) {
                 InfoItem(
                     label = "Odometer",
-                    value = status.odometer?.let { "%,.0f km".format(it) } ?: "--",
+                    value = status.odometer?.let {
+                        val value = UnitFormatter.formatDistanceValue(it, units, 0)
+                        "%,.0f $distanceUnit".format(value)
+                    } ?: "--",
                     icon = Icons.Filled.Speed
                 )
                 InfoItem(

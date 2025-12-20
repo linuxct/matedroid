@@ -38,8 +38,19 @@ data class CarStatusResponse(
 
 @JsonClass(generateAdapter = true)
 data class CarStatusData(
-    @Json(name = "status") val status: CarStatus? = null
+    @Json(name = "status") val status: CarStatus? = null,
+    @Json(name = "units") val units: Units? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class Units(
+    @Json(name = "unit_of_length") val unitOfLength: String? = null,
+    @Json(name = "unit_of_pressure") val unitOfPressure: String? = null,
+    @Json(name = "unit_of_temperature") val unitOfTemperature: String? = null
+) {
+    val isMetric: Boolean get() = unitOfLength == "km"
+    val isImperial: Boolean get() = unitOfLength == "mi"
+}
 
 @JsonClass(generateAdapter = true)
 data class CarStatus(

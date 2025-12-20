@@ -5,6 +5,7 @@ import com.matedroid.data.api.models.BatteryHealth
 import com.matedroid.data.api.models.CarData
 import com.matedroid.data.api.models.CarStatus
 import com.matedroid.data.api.models.ChargeData
+import com.matedroid.data.api.models.Units
 import com.matedroid.data.api.models.ChargeDetail
 import com.matedroid.data.api.models.DriveData
 import com.matedroid.data.api.models.DriveDetail
@@ -19,6 +20,11 @@ sealed class ApiResult<out T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error(val message: String, val code: Int? = null) : ApiResult<Nothing>()
 }
+
+data class CarStatusWithUnits(
+    val status: CarStatus,
+    val units: Units
+)
 
 @Singleton
 class TeslamateRepository @Inject constructor(
@@ -62,14 +68,16 @@ class TeslamateRepository @Inject constructor(
         }
     }
 
-    suspend fun getCarStatus(carId: Int): ApiResult<CarStatus> {
+    suspend fun getCarStatus(carId: Int): ApiResult<CarStatusWithUnits> {
         return try {
             val api = getApi() ?: return ApiResult.Error("Server not configured")
             val response = api.getCarStatus(carId)
             if (response.isSuccessful) {
-                val status = response.body()?.data?.status
+                val data = response.body()?.data
+                val status = data?.status
+                val units = data?.units ?: Units()
                 if (status != null) {
-                    ApiResult.Success(status)
+                    ApiResult.Success(CarStatusWithUnits(status, units))
                 } else {
                     ApiResult.Error("No status data returned")
                 }

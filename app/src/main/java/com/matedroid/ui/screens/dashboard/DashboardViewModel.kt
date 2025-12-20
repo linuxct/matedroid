@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.matedroid.data.api.models.CarData
 import com.matedroid.data.api.models.CarStatus
+import com.matedroid.data.api.models.Units
 import com.matedroid.data.repository.ApiResult
 import com.matedroid.data.repository.TeslamateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ data class DashboardUiState(
     val cars: List<CarData> = emptyList(),
     val selectedCarId: Int? = null,
     val carStatus: CarStatus? = null,
+    val units: Units? = null,
     val error: String? = null
 ) {
     val selectedCarEfficiency: Double?
@@ -90,7 +92,8 @@ class DashboardViewModel @Inject constructor(
             when (val result = repository.getCarStatus(carId)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
-                        carStatus = result.data,
+                        carStatus = result.data.status,
+                        units = result.data.units,
                         error = null
                     )
                 }
@@ -112,7 +115,8 @@ class DashboardViewModel @Inject constructor(
                 when (val result = repository.getCarStatus(carId)) {
                     is ApiResult.Success -> {
                         _uiState.value = _uiState.value.copy(
-                            carStatus = result.data
+                            carStatus = result.data.status,
+                            units = result.data.units
                         )
                     }
                     is ApiResult.Error -> {
