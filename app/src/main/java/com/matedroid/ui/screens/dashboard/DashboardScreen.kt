@@ -116,13 +116,7 @@ fun DashboardScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(uiState.carStatus?.displayName ?: "MateDroid")
-                        if (uiState.carStatus != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            StatusIndicatorsRow(uiState.carStatus!!, uiState.units)
-                        }
-                    }
+                    Text(uiState.carStatus?.displayName ?: "MateDroid")
                 },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
@@ -345,9 +339,9 @@ private fun CarImage(
 }
 
 @Composable
-private fun StatusIndicatorsRow(status: CarStatus, units: Units?) {
+private fun StatusIndicatorsRow(status: CarStatus, units: Units?, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -459,7 +453,14 @@ private fun BatteryCard(
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
         ) {
-            // Car image at the top (reduced padding above)
+            // Status indicators row at the top
+            StatusIndicatorsRow(
+                status = status,
+                units = units,
+                modifier = Modifier.padding(top = 4.dp, bottom = 0.dp)
+            )
+
+            // Car image
             CarImage(
                 carModel = carModel,
                 carTrimBadging = carTrimBadging,
