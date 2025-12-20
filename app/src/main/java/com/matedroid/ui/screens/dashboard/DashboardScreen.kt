@@ -1,9 +1,12 @@
 package com.matedroid.ui.screens.dashboard
 
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Paint
+import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -268,9 +271,9 @@ private fun DashboardContent(
                 carExterior = carExterior
             )
 
-            // Location Section
-            status.geofence?.let { geofence ->
-                LocationCard(geofence = geofence, status = status)
+            // Location Section - show if we have coordinates
+            if (status.latitude != null && status.longitude != null) {
+                LocationCard(status = status)
             }
 
             // Vehicle Info Section
@@ -649,11 +652,34 @@ private fun ChargingProgressBar(
 }
 
 @Composable
-private fun LocationCard(geofence: String, status: CarStatus) {
+private fun LocationCard(status: CarStatus) {
+    val context = LocalContext.current
     val latitude = status.latitude
     val longitude = status.longitude
+    val geofence = status.geofence
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    // Location text: geofence name if available, otherwise coordinates
+    val locationText = geofence ?: run {
+        if (latitude != null && longitude != null) {
+            "%.5f, %.5f".format(latitude, longitude)
+        } else {
+            "Unknown"
+        }
+    }
+
+    fun openInMaps() {
+        if (latitude != null && longitude != null) {
+            val geoUri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude")
+            val intent = Intent(Intent.ACTION_VIEW, geoUri)
+            context.startActivity(intent)
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { openInMaps() }
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -673,7 +699,7 @@ private fun LocationCard(geofence: String, status: CarStatus) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = geofence,
+                    text = locationText,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -684,6 +710,7 @@ private fun LocationCard(geofence: String, status: CarStatus) {
                 SmallLocationMap(
                     latitude = latitude,
                     longitude = longitude,
+                    onClick = { openInMaps() },
                     modifier = Modifier
                         .width(140.dp)
                         .height(70.dp)
@@ -698,6 +725,7 @@ private fun LocationCard(geofence: String, status: CarStatus) {
 private fun SmallLocationMap(
     latitude: Double,
     longitude: Double,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary.toArgb()
@@ -707,20 +735,23 @@ private fun SmallLocationMap(
         onDispose { }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            MapView(ctx).apply {
-                setTileSource(TileSourceFactory.MAPNIK)
-                setMultiTouchControls(false)
+    Box(
+        modifier = modifier.clickable { onClick() }
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                MapView(ctx).apply {
+                    setTileSource(TileSourceFactory.MAPNIK)
+                    setMultiTouchControls(false)
 
-                // Disable all interactions for this small preview map
-                setBuiltInZoomControls(false)
-                isClickable = false
-                isFocusable = false
+                    // Disable all interactions for this small preview map
+                    setBuiltInZoomControls(false)
+                    isClickable = false
+                    isFocusable = false
 
-                val carLocation = GeoPoint(latitude, longitude)
-                controller.setZoom(15.0)
-                controller.setCenter(carLocation)
+                    val carLocation = GeoPoint(latitude, longitude)
+                    controller.setZoom(15.0)
+                    controller.setCenter(carLocation)
 
                 // Add a marker for the car
                 val marker = Marker(this).apply {
@@ -731,8 +762,9 @@ private fun SmallLocationMap(
                 overlays.add(marker)
             }
         },
-        modifier = modifier
+        modifier = Modifier.fillMaxSize()
     )
+    }
 }
 
 @Composable
