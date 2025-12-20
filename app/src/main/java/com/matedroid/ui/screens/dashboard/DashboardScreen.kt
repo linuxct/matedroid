@@ -119,6 +119,7 @@ fun DashboardScreen(
                     Column {
                         Text(uiState.carStatus?.displayName ?: "MateDroid")
                         if (uiState.carStatus != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
                             StatusIndicatorsRow(uiState.carStatus!!, uiState.units)
                         }
                     }
@@ -330,7 +331,7 @@ private fun CarImage(
 
     if (bitmap != null) {
         Box(
-            modifier = modifier.height(160.dp),
+            modifier = modifier.height(210.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
