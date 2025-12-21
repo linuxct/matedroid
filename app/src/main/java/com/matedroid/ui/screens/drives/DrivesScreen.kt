@@ -602,16 +602,15 @@ private fun DrivesChart(
                 )
             }
 
+            // Show max ~6 labels to avoid crowding
+            val labelInterval = ((barData.size + 5) / 6).coerceAtLeast(1)
+
             InteractiveBarChart(
                 data = barData,
                 modifier = Modifier.fillMaxWidth(),
                 barColor = palette.accent,
                 labelColor = palette.onSurfaceVariant,
-                showEveryNthLabel = when {
-                    barData.size <= 7 -> 1
-                    barData.size <= 14 -> 2
-                    else -> 3
-                },
+                showEveryNthLabel = labelInterval,
                 valueFormatter = { "%.0f drives".format(it) }
             )
         }
