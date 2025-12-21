@@ -25,12 +25,17 @@ data class BatteryHealth(
 
 @JsonClass(generateAdapter = true)
 data class UpdatesResponse(
-    @Json(name = "data") val data: List<UpdateData>? = null
+    @Json(name = "data") val data: UpdatesResponseData? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class UpdatesResponseData(
+    @Json(name = "updates") val updates: List<UpdateData>? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class UpdateData(
-    @Json(name = "id") val id: Int? = null,
+    @Json(name = "update_id") val id: Int? = null,
     @Json(name = "version") val version: String? = null,
     @Json(name = "start_date") val startDate: String? = null,
     @Json(name = "end_date") val endDate: String? = null
