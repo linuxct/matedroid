@@ -271,40 +271,42 @@ private fun SummaryCard(summary: ChargesSummary, currencySymbol: String, palette
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth()
             ) {
                 SummaryItem(
                     icon = Icons.Default.ElectricBolt,
                     label = "Total Sessions",
                     value = summary.totalCharges.toString(),
-                    palette = palette
+                    palette = palette,
+                    modifier = Modifier.weight(1f)
                 )
                 SummaryItem(
                     icon = Icons.Default.BatteryChargingFull,
                     label = "Total Energy",
                     value = "%.1f kWh".format(summary.totalEnergyAdded),
-                    palette = palette
+                    palette = palette,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth()
             ) {
                 SummaryItem(
                     icon = Icons.Default.Paid,
                     label = "Total Cost",
                     value = "$currencySymbol%.2f".format(summary.totalCost),
-                    palette = palette
+                    palette = palette,
+                    modifier = Modifier.weight(1f)
                 )
                 SummaryItem(
                     icon = Icons.Default.Paid,
                     label = "Avg Cost/Session",
                     value = "$currencySymbol%.2f".format(summary.avgCostPerCharge),
-                    palette = palette
+                    palette = palette,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -316,11 +318,12 @@ private fun SummaryItem(
     icon: ImageVector,
     label: String,
     value: String,
-    palette: CarColorPalette
+    palette: CarColorPalette,
+    modifier: Modifier = Modifier
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(4.dp)
+        modifier = modifier.padding(4.dp)
     ) {
         Icon(
             imageVector = icon,
