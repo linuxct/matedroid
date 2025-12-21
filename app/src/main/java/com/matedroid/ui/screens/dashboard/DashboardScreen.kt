@@ -1010,7 +1010,7 @@ private fun NavButton(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(start = 12.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -1034,6 +1034,12 @@ private fun NavButton(
                     color = palette.onSurfaceVariant
                 )
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = palette.onSurfaceVariant
+            )
         }
     }
 }

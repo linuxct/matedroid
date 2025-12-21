@@ -101,7 +101,25 @@ class DashboardViewModel @Inject constructor(
         val carId = _uiState.value.selectedCarId ?: return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
-            loadCarStatus(carId)
+
+            // Fetch car status directly (not via loadCarStatus which launches separate coroutine)
+            when (val result = repository.getCarStatus(carId)) {
+                is ApiResult.Success -> {
+                    val status = result.data.status
+                    _uiState.value = _uiState.value.copy(
+                        carStatus = status,
+                        units = result.data.units,
+                        error = null
+                    )
+                    fetchAddressIfNeeded(status)
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        error = result.message
+                    )
+                }
+            }
+
             _uiState.value = _uiState.value.copy(isRefreshing = false)
         }
     }
