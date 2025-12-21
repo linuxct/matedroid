@@ -984,25 +984,29 @@ private fun CompactInfoItem(
                         .clickable(onClick = onClick)
                 } else Modifier
             ),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = accentColor
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = "$label: ",
-            style = MaterialTheme.typography.bodySmall,
-            color = accentColor
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = accentColor
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "$label:",
+                style = MaterialTheme.typography.bodySmall,
+                color = accentColor
+            )
+        }
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
-            color = textColor
+            color = textColor,
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp)
         )
     }
 }
