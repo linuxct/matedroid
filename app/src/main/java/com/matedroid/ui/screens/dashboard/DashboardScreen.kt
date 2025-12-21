@@ -903,15 +903,26 @@ private fun TirePressureDisplay(
     tpms: TpmsDetails,
     units: Units?
 ) {
-    val okColor = StatusSuccess
+    val normalColor = MaterialTheme.colorScheme.onSurface
     val warningColor = StatusWarning
-    val carBodyColor = MaterialTheme.colorScheme.outlineVariant
+    val carBodyColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 
-    // Determine colors for each tire
-    val flColor = if (tpms.warningFl == true) warningColor else okColor
-    val frColor = if (tpms.warningFr == true) warningColor else okColor
-    val rlColor = if (tpms.warningRl == true) warningColor else okColor
-    val rrColor = if (tpms.warningRr == true) warningColor else okColor
+    // Pressure thresholds in bar (2.7 - 3.2 bar is normal range)
+    // Converted: 2.7 bar = 39.2 PSI, 3.2 bar = 46.4 PSI
+    val minPressureBar = 2.7
+    val maxPressureBar = 3.2
+
+    // Check if pressure is out of bounds
+    fun isPressureWarning(pressureBar: Double?): Boolean {
+        if (pressureBar == null) return false
+        return pressureBar < minPressureBar || pressureBar > maxPressureBar
+    }
+
+    // Determine colors for each tire based on pressure range (API always returns bar)
+    val flColor = if (tpms.warningFl == true || isPressureWarning(tpms.pressureFl)) warningColor else normalColor
+    val frColor = if (tpms.warningFr == true || isPressureWarning(tpms.pressureFr)) warningColor else normalColor
+    val rlColor = if (tpms.warningRl == true || isPressureWarning(tpms.pressureRl)) warningColor else normalColor
+    val rrColor = if (tpms.warningRr == true || isPressureWarning(tpms.pressureRr)) warningColor else normalColor
 
     Row(
         modifier = Modifier
@@ -1006,13 +1017,12 @@ private fun TirePressureDisplay(
                 cornerRadius = tireCornerRadius
             )
 
-            // Draw car body (rounded rectangle) - drawn last so it's on top
+            // Draw car body (rounded rectangle with 30% transparency) - drawn last so it's on top
             drawRoundRect(
                 color = carBodyColor,
                 topLeft = androidx.compose.ui.geometry.Offset(carLeft, carTop),
                 size = androidx.compose.ui.geometry.Size(carWidth, carHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx())
             )
         }
 
