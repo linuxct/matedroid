@@ -47,6 +47,12 @@ object CarImageResolver {
     // Colors only available on Highland/Juniper
     private val HIGHLAND_JUNIPER_COLORS = setOf("PN00", "PN01", "PR01", "PX02")
 
+    // Wheel types only available on Highland Model 3 (normalized, lowercase)
+    private val HIGHLAND_M3_WHEEL_TYPES = setOf("photon18", "glider18", "nova18", "w38a")
+
+    // Wheel types only available on Juniper Model Y (normalized, lowercase)
+    private val JUNIPER_MY_WHEEL_TYPES = setOf("photon18", "wy18p")
+
     // Legacy Model 3 valid colors
     private val LEGACY_M3_COLORS = setOf("PBSB", "PMNG", "PMSS", "PPSW", "PPSB", "PPMR", "PMBL")
 
@@ -78,6 +84,8 @@ object CarImageResolver {
     // Highland Model 3 wheels
     private val WHEEL_PATTERNS_M3H = listOf(
         "photon18" to "W38A",
+        "glider18" to "W38A",  // Also known as Nova wheels
+        "nova18" to "W38A",
         "18" to "W38A"
     )
 
@@ -254,7 +262,8 @@ object CarImageResolver {
      *
      * Highland/Juniper detection heuristics:
      * 1. If color is a new Highland/Juniper-only color (PN00, PN01, PR01, PX02), use Highland/Juniper
-     * 2. Otherwise, assume legacy
+     * 2. If wheel type is a Highland/Juniper-only wheel (Photon18, Glider18, etc.), use Highland/Juniper
+     * 3. Otherwise, assume legacy
      */
     private fun determineModelVariant(
         model: String?,
@@ -265,18 +274,25 @@ object CarImageResolver {
         val baseModel = model?.uppercase() ?: "3"
         val isHighlandJuniperColor = colorCode in HIGHLAND_JUNIPER_COLORS
 
+        // Normalize wheel type for checking
+        val normalizedWheel = wheelType?.lowercase()?.replace(" ", "")?.replace("-", "")?.replace("_", "")
+
+        // Check if wheel type indicates Highland/Juniper
+        val isHighlandM3Wheel = normalizedWheel != null && HIGHLAND_M3_WHEEL_TYPES.any { normalizedWheel.startsWith(it) }
+        val isJuniperMYWheel = normalizedWheel != null && JUNIPER_MY_WHEEL_TYPES.any { normalizedWheel.startsWith(it) }
+
         // Check for Performance trim
         val isPerformance = trimBadging?.uppercase()?.startsWith("P") == true ||
                 trimBadging?.lowercase()?.contains("performance") == true
 
         return when (baseModel) {
             "3" -> when {
-                isHighlandJuniperColor && isPerformance -> "m3hp"
-                isHighlandJuniperColor -> "m3h"
+                (isHighlandJuniperColor || isHighlandM3Wheel) && isPerformance -> "m3hp"
+                isHighlandJuniperColor || isHighlandM3Wheel -> "m3h"
                 else -> "m3"
             }
             "Y" -> when {
-                isHighlandJuniperColor -> "myj"
+                isHighlandJuniperColor || isJuniperMYWheel -> "myj"
                 else -> "my"
             }
             "S" -> "ms"
