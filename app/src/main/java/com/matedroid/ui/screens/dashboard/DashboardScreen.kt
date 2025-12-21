@@ -107,6 +107,7 @@ fun DashboardScreen(
     onNavigateToDrives: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
     onNavigateToBattery: (carId: Int, efficiency: Double?, exteriorColor: String?) -> Unit = { _, _, _ -> },
     onNavigateToMileage: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
+    onNavigateToUpdates: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -169,6 +170,11 @@ fun DashboardScreen(
                         onNavigateToMileage = {
                             uiState.selectedCarId?.let { carId ->
                                 onNavigateToMileage(carId, uiState.selectedCarExterior?.exteriorColor)
+                            }
+                        },
+                        onNavigateToUpdates = {
+                            uiState.selectedCarId?.let { carId ->
+                                onNavigateToUpdates(carId, uiState.selectedCarExterior?.exteriorColor)
                             }
                         }
                     )
@@ -261,7 +267,8 @@ private fun DashboardContent(
     onNavigateToCharges: () -> Unit = {},
     onNavigateToDrives: () -> Unit = {},
     onNavigateToBattery: () -> Unit = {},
-    onNavigateToMileage: () -> Unit = {}
+    onNavigateToMileage: () -> Unit = {},
+    onNavigateToUpdates: () -> Unit = {}
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val palette = CarColorPalettes.forExteriorColor(carExterior?.exteriorColor, isDarkTheme)
@@ -292,7 +299,11 @@ private fun DashboardContent(
             }
 
             // Vehicle Info Section
-            VehicleInfoCard(status, units)
+            VehicleInfoCard(
+                status = status,
+                units = units,
+                onNavigateToUpdates = onNavigateToUpdates
+            )
         }
 
         // Fixed bottom quick links
@@ -806,7 +817,11 @@ private fun SmallLocationMap(
 }
 
 @Composable
-private fun VehicleInfoCard(status: CarStatus, units: Units?) {
+private fun VehicleInfoCard(
+    status: CarStatus,
+    units: Units?,
+    onNavigateToUpdates: () -> Unit = {}
+) {
     val distanceUnit = UnitFormatter.getDistanceUnit(units)
     val pressureUnit = UnitFormatter.getPressureUnit(units)
     val tpms = status.tpmsDetails
@@ -848,7 +863,8 @@ private fun VehicleInfoCard(status: CarStatus, units: Units?) {
                 InfoItem(
                     label = "Software",
                     value = status.version ?: "--",
-                    icon = Icons.Filled.Settings
+                    icon = Icons.Filled.Settings,
+                    onClick = onNavigateToUpdates
                 )
             }
 
@@ -958,24 +974,38 @@ private fun TirePressureItem(
 private fun InfoItem(
     label: String,
     value: String,
-    icon: ImageVector
+    icon: ImageVector,
+    onClick: (() -> Unit)? = null
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    val modifier = if (onClick != null) {
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    } else {
+        Modifier.padding(8.dp)
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = if (onClick != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (onClick != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = if (onClick != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }

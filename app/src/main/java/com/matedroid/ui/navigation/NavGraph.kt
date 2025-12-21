@@ -18,6 +18,7 @@ import com.matedroid.ui.screens.drives.DriveDetailScreen
 import com.matedroid.ui.screens.drives.DrivesScreen
 import com.matedroid.ui.screens.mileage.MileageScreen
 import com.matedroid.ui.screens.settings.SettingsScreen
+import com.matedroid.ui.screens.updates.SoftwareVersionsScreen
 
 sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
@@ -79,8 +80,14 @@ sealed class Screen(val route: String) {
             }
         }
     }
-    data object Updates : Screen("updates/{carId}") {
-        fun createRoute(carId: Int) = "updates/$carId"
+    data object Updates : Screen("updates/{carId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "updates/$carId?exteriorColor=$exteriorColor"
+            } else {
+                "updates/$carId"
+            }
+        }
     }
     data object PalettePreview : Screen("palette_preview")
 }
@@ -129,6 +136,9 @@ fun NavGraph(
                 },
                 onNavigateToMileage = { carId, exteriorColor ->
                     navController.navigate(Screen.Mileage.createRoute(carId, exteriorColor))
+                },
+                onNavigateToUpdates = { carId, exteriorColor ->
+                    navController.navigate(Screen.Updates.createRoute(carId, exteriorColor))
                 }
             )
         }
@@ -266,6 +276,26 @@ fun NavGraph(
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
             val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             MileageScreen(
+                carId = carId,
+                exteriorColor = exteriorColor,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Updates.route,
+            arguments = listOf(
+                navArgument("carId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
+            SoftwareVersionsScreen(
                 carId = carId,
                 exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() }
