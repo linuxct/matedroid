@@ -989,7 +989,7 @@ private fun VehicleInfoCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider(color = palette.onSurfaceVariant.copy(alpha = 0.2f))
                 Spacer(modifier = Modifier.height(8.dp))
-                TirePressureDisplay(tpms = tpms, units = units)
+                TirePressureDisplay(tpms = tpms, units = units, palette = palette)
             }
         }
     }
@@ -1052,167 +1052,196 @@ private fun NavButton(
 @Composable
 private fun TirePressureDisplay(
     tpms: TpmsDetails,
-    units: Units?
+    units: Units?,
+    palette: CarColorPalette
 ) {
-    val normalColor = MaterialTheme.colorScheme.onSurface
+    val okColor = StatusSuccess
     val warningColor = StatusWarning
-    val carBodyColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    val carOutlineColor = palette.onSurfaceVariant.copy(alpha = 0.4f)
 
     // Use API warning flags only - no hardcoded thresholds
-    val flColor = if (tpms.warningFl == true) warningColor else normalColor
-    val frColor = if (tpms.warningFr == true) warningColor else normalColor
-    val rlColor = if (tpms.warningRl == true) warningColor else normalColor
-    val rrColor = if (tpms.warningRr == true) warningColor else normalColor
+    val flColor = if (tpms.warningFl == true) warningColor else okColor
+    val frColor = if (tpms.warningFr == true) warningColor else okColor
+    val rlColor = if (tpms.warningRl == true) warningColor else okColor
+    val rrColor = if (tpms.warningRr == true) warningColor else okColor
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp),
+            .height(56.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left pressure values
+        // Left pressure values (FL, RL)
         Column(
-            modifier = Modifier.width(60.dp),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TirePressureValue(
+            TirePressureItem(
                 label = "FL",
                 pressure = tpms.pressureFl,
                 color = flColor,
-                units = units
+                units = units,
+                alignEnd = true
             )
-            Spacer(modifier = Modifier.height(24.dp))
-            TirePressureValue(
+            TirePressureItem(
                 label = "RL",
                 pressure = tpms.pressureRl,
                 color = rlColor,
-                units = units
+                units = units,
+                alignEnd = true
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
-        // Car top-down view with tires
+        // Tesla car outline (minimalist)
         Canvas(
             modifier = Modifier
-                .width(60.dp)
-                .height(100.dp)
+                .width(32.dp)
+                .height(48.dp)
         ) {
-            val carWidth = size.width * 0.65f
-            val carHeight = size.height * 0.9f
-            val carLeft = (size.width - carWidth) / 2
-            val carTop = (size.height - carHeight) / 2
+            val w = size.width
+            val h = size.height
 
-            val tireWidth = size.width * 0.15f
-            val tireHeight = size.height * 0.18f
-            val tireCornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+            // Draw Tesla-like car outline using path
+            val path = androidx.compose.ui.graphics.Path().apply {
+                // Start at top-left of hood
+                moveTo(w * 0.25f, h * 0.22f)
+                // Hood curve to top center
+                quadraticTo(w * 0.25f, h * 0.08f, w * 0.5f, h * 0.08f)
+                // Hood curve to top-right
+                quadraticTo(w * 0.75f, h * 0.08f, w * 0.75f, h * 0.22f)
+                // Right side down to rear
+                lineTo(w * 0.82f, h * 0.35f)
+                quadraticTo(w * 0.85f, h * 0.45f, w * 0.85f, h * 0.55f)
+                lineTo(w * 0.85f, h * 0.78f)
+                // Rear curve
+                quadraticTo(w * 0.85f, h * 0.92f, w * 0.5f, h * 0.94f)
+                quadraticTo(w * 0.15f, h * 0.92f, w * 0.15f, h * 0.78f)
+                // Left side up to hood
+                lineTo(w * 0.15f, h * 0.55f)
+                quadraticTo(w * 0.15f, h * 0.45f, w * 0.18f, h * 0.35f)
+                close()
+            }
 
-            // Tire inset from car edges
-            val tireInsetX = carWidth * 0.08f
-            val tireInsetY = carHeight * 0.08f
-
-            // Front left tire (inside car body at top-left corner)
-            drawRoundRect(
-                color = flColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    carLeft + tireInsetX,
-                    carTop + tireInsetY
-                ),
-                size = androidx.compose.ui.geometry.Size(tireWidth, tireHeight),
-                cornerRadius = tireCornerRadius
+            drawPath(
+                path = path,
+                color = carOutlineColor,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 2.dp.toPx(),
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                )
             )
 
-            // Front right tire (inside car body at top-right corner)
-            drawRoundRect(
-                color = frColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    carLeft + carWidth - tireWidth - tireInsetX,
-                    carTop + tireInsetY
-                ),
-                size = androidx.compose.ui.geometry.Size(tireWidth, tireHeight),
-                cornerRadius = tireCornerRadius
+            // Windshield
+            val windshieldPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.30f, h * 0.24f)
+                quadraticTo(w * 0.5f, h * 0.20f, w * 0.70f, h * 0.24f)
+                lineTo(w * 0.65f, h * 0.34f)
+                quadraticTo(w * 0.5f, h * 0.32f, w * 0.35f, h * 0.34f)
+                close()
+            }
+            drawPath(
+                path = windshieldPath,
+                color = carOutlineColor.copy(alpha = 0.3f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
             )
 
-            // Rear left tire (inside car body at bottom-left corner)
-            drawRoundRect(
-                color = rlColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    carLeft + tireInsetX,
-                    carTop + carHeight - tireHeight - tireInsetY
-                ),
-                size = androidx.compose.ui.geometry.Size(tireWidth, tireHeight),
-                cornerRadius = tireCornerRadius
-            )
-
-            // Rear right tire (inside car body at bottom-right corner)
-            drawRoundRect(
-                color = rrColor,
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    carLeft + carWidth - tireWidth - tireInsetX,
-                    carTop + carHeight - tireHeight - tireInsetY
-                ),
-                size = androidx.compose.ui.geometry.Size(tireWidth, tireHeight),
-                cornerRadius = tireCornerRadius
-            )
-
-            // Draw car body (rounded rectangle with 30% transparency) - drawn last so it's on top
-            drawRoundRect(
-                color = carBodyColor,
-                topLeft = androidx.compose.ui.geometry.Offset(carLeft, carTop),
-                size = androidx.compose.ui.geometry.Size(carWidth, carHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx())
+            // Rear window
+            val rearPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.30f, h * 0.74f)
+                quadraticTo(w * 0.5f, h * 0.72f, w * 0.70f, h * 0.74f)
+                lineTo(w * 0.65f, h * 0.82f)
+                quadraticTo(w * 0.5f, h * 0.84f, w * 0.35f, h * 0.82f)
+                close()
+            }
+            drawPath(
+                path = rearPath,
+                color = carOutlineColor.copy(alpha = 0.3f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
-        // Right pressure values
+        // Right pressure values (FR, RR)
         Column(
-            modifier = Modifier.width(60.dp),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TirePressureValue(
+            TirePressureItem(
                 label = "FR",
                 pressure = tpms.pressureFr,
                 color = frColor,
-                units = units
+                units = units,
+                alignEnd = false
             )
-            Spacer(modifier = Modifier.height(24.dp))
-            TirePressureValue(
+            TirePressureItem(
                 label = "RR",
                 pressure = tpms.pressureRr,
                 color = rrColor,
-                units = units
+                units = units,
+                alignEnd = false
             )
         }
     }
 }
 
 @Composable
-private fun TirePressureValue(
+private fun TirePressureItem(
     label: String,
     pressure: Double?,
     color: androidx.compose.ui.graphics.Color,
-    units: Units?
+    units: Units?,
+    alignEnd: Boolean
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = pressure?.let { UnitFormatter.formatPressure(it, units, 1) } ?: "--",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = color
-        )
+        if (alignEnd) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(color, shape = RoundedCornerShape(50))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = pressure?.let { UnitFormatter.formatPressure(it, units, 1) } ?: "--",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+        } else {
+            Text(
+                text = pressure?.let { UnitFormatter.formatPressure(it, units, 1) } ?: "--",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(color, shape = RoundedCornerShape(50))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
     }
 }
 
