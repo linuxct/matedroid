@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.DeviceThermostat
@@ -237,10 +237,10 @@ private fun ChargeDetailContent(
                 if (cost > 0) {
                     StatsSectionCard(
                         title = "Cost",
-                        icon = Icons.Default.AttachMoney,
+                        icon = Icons.Default.Paid,
                         stats = listOf(
-                            StatItem("Total", "%.2f".format(cost)),
-                            StatItem("Per kWh", "%.3f".format(cost / s.energyAdded.coerceAtLeast(0.001)))
+                            StatItem("Total", "$currencySymbol%.2f".format(cost)),
+                            StatItem("Per kWh", "$currencySymbol%.3f".format(cost / s.energyAdded.coerceAtLeast(0.001)))
                         )
                     )
                 }
@@ -392,7 +392,7 @@ private fun LocationHeaderCard(detail: ChargeDetail, currencySymbol: String) {
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Icon(
-                                    imageVector = Icons.Default.AttachMoney,
+                                    imageVector = Icons.Default.Paid,
                                     contentDescription = null,
                                     modifier = Modifier.size(24.dp),
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer
