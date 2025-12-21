@@ -144,6 +144,7 @@ fun MileageScreen(
                     year = year,
                     uiState = uiState,
                     chartData = viewModel.getMonthlyChartData(),
+                    palette = palette,
                     onClose = { viewModel.clearSelectedYear() },
                     onMonthClick = { viewModel.selectMonth(it) }
                 )
@@ -163,6 +164,7 @@ fun MileageScreen(
                     monthData = monthData,
                     dailyData = uiState.dailyData,
                     dailyChartData = viewModel.getDailyChartData(),
+                    palette = palette,
                     onClose = { viewModel.clearSelectedMonth() }
                 )
             }
@@ -358,6 +360,7 @@ private fun YearDetailScreen(
     year: Int,
     uiState: MileageUiState,
     chartData: List<Pair<Int, Double>>,
+    palette: CarColorPalette,
     onClose: () -> Unit,
     onMonthClick: (YearMonth) -> Unit
 ) {
@@ -389,13 +392,14 @@ private fun YearDetailScreen(
                     totalDistance = uiState.yearTotalDistance,
                     avgDistance = uiState.avgMonthlyDistance,
                     avgLabel = "Avg/Month",
-                    driveCount = uiState.yearDriveCount
+                    driveCount = uiState.yearDriveCount,
+                    palette = palette
                 )
             }
 
             // Monthly chart
             item {
-                MonthlyChartCard(chartData = chartData)
+                MonthlyChartCard(chartData = chartData, palette = palette)
             }
 
             // Monthly list
@@ -428,11 +432,11 @@ private fun YearDetailScreen(
 }
 
 @Composable
-private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
+private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>, palette: CarColorPalette) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -440,20 +444,21 @@ private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = palette.accent,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Mileage",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onSurface
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Filled.Info,
                     contentDescription = "Info",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = palette.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -465,7 +470,7 @@ private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
-                barColor = ChartBlue
+                barColor = palette.accent
             )
 
             // X-axis labels (months 1-12)
@@ -477,7 +482,7 @@ private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
                     Text(
                         text = month.toString(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = palette.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center
                     )
@@ -487,7 +492,7 @@ private fun MonthlyChartCard(chartData: List<Pair<Int, Double>>) {
             Text(
                 text = "month",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = palette.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -575,6 +580,7 @@ private fun MonthDetailScreen(
     monthData: MonthlyMileage?,
     dailyData: List<DailyMileage>,
     dailyChartData: List<Pair<Int, Double>>,
+    palette: CarColorPalette,
     onClose: () -> Unit
 ) {
     Scaffold(
@@ -605,7 +611,8 @@ private fun MonthDetailScreen(
             item {
                 MonthSummaryCard(
                     yearMonth = yearMonth,
-                    monthData = monthData
+                    monthData = monthData,
+                    palette = palette
                 )
             }
 
@@ -614,7 +621,8 @@ private fun MonthDetailScreen(
                 item {
                     DailyChartCard(
                         chartData = dailyChartData,
-                        daysWithData = dailyData.size
+                        daysWithData = dailyData.size,
+                        palette = palette
                     )
                 }
             }
@@ -641,7 +649,8 @@ private fun MonthDetailScreen(
 @Composable
 private fun MonthSummaryCard(
     yearMonth: YearMonth,
-    monthData: MonthlyMileage?
+    monthData: MonthlyMileage?,
+    palette: CarColorPalette
 ) {
     val totalDistance = monthData?.totalDistance ?: 0.0
     val driveCount = monthData?.driveCount ?: 0
@@ -653,7 +662,7 @@ private fun MonthSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -666,26 +675,28 @@ private fun MonthSummaryCard(
                     Text(
                         text = yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onSurface
                     )
                     Text(
                         text = yearMonth.year.toString(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = palette.onSurfaceVariant
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.DirectionsCar,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = palette.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = driveCount.toString(),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onSurface
                     )
                 }
             }
@@ -904,12 +915,13 @@ private fun StatChip(
 @Composable
 private fun DailyChartCard(
     chartData: List<Pair<Int, Double>>,
-    daysWithData: Int
+    daysWithData: Int,
+    palette: CarColorPalette
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -922,20 +934,21 @@ private fun DailyChartCard(
                     Icon(
                         imageVector = Icons.Filled.BarChart,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = palette.accent,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Mileage",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onSurface
                     )
                 }
                 Text(
                     text = "$daysWithData days",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = palette.onSurfaceVariant
                 )
             }
 
@@ -946,7 +959,7 @@ private fun DailyChartCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp),
-                barColor = ChartBlue
+                barColor = palette.accent
             )
 
             // X-axis labels for days with data
@@ -960,7 +973,7 @@ private fun DailyChartCard(
                         Text(
                             text = day.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = palette.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center
                         )

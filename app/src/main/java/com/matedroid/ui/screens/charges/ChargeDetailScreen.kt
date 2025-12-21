@@ -212,8 +212,10 @@ private fun ChargeDetailContent(
                     icon = Icons.Default.ElectricalServices,
                     stats = listOf(
                         StatItem("Voltage (max)", "${s.voltageMax} V"),
-                        StatItem("Current (max)", "${s.currentMax} A"),
+                        StatItem("Voltage (min)", "${s.voltageMin} V"),
                         StatItem("Voltage (avg)", "%.0f V".format(s.voltageAvg)),
+                        StatItem("Current (max)", "${s.currentMax} A"),
+                        StatItem("Current (min)", "${s.currentMin} A"),
                         StatItem("Current (avg)", "%.1f A".format(s.currentAvg))
                     )
                 )
@@ -312,7 +314,7 @@ private fun LocationHeaderCard(detail: ChargeDetail, currencySymbol: String) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
             )
 
-            // Date and time
+            // Start time
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Schedule,
@@ -323,7 +325,35 @@ private fun LocationHeaderCard(detail: ChargeDetail, currencySymbol: String) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
+                        text = "Started",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
                         text = formatDateTime(detail.startDate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            // End time
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Ended",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = formatDateTime(detail.endDate),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
