@@ -38,8 +38,10 @@ https://static-assets.tesla.com/v1/compositor/?model=m3&view=STUD_3QTR&size=800&
 
 **Example URL**:
 ```
-https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&options=$MT370,$PPSW,$W38A,$IPB3&view=STUD_FRONT34&model=m3&size=800&bkba_opt=1
+https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&options=$MT370,$PPSW,$W38A,$IPB3&view=STUD_3QTR&model=m3&size=800&bkba_opt=1
 ```
+
+**Note**: We use `STUD_3QTR` view for both compositors for consistent car sizing across all models.
 
 **Parameters**:
 | Parameter | Description | Example |
@@ -63,8 +65,8 @@ https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&
 |----------------------------------|-----------------|-------|
 | `3` | `m3` | Model 3 |
 | `Y` | `my` | Model Y |
-| `S` | `ms` | Model S (not downloaded) |
-| `X` | `mx` | Model X (not downloaded) |
+| `S` | `ms` | Model S |
+| `X` | `mx` | Model X |
 
 ### Internal Model Variants (for asset naming)
 
@@ -75,6 +77,8 @@ https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&
 | Highland Model 3 Performance | 2024+ Perf | New | `m3hp` |
 | Legacy Model Y | Pre-2025 | Old | `my` |
 | Juniper Model Y | 2025+ | New | `myj` |
+| Model S | All | Old | `ms` |
+| Model X | All | Old | `mx` |
 
 ### Highland/Juniper Trim Codes
 
@@ -187,7 +191,7 @@ This may miss Highland/Juniper cars with common colors like Pearl White (`PPSW`)
 - Highland: Uses `MT371` trim code
 
 ### 6. Model S/X Support
-The old compositor supports Model S (`ms`) and Model X (`mx`) with legacy colors, but we don't download these to save space. Can be added if needed.
+The old compositor supports Model S (`ms`) and Model X (`mx`) with legacy colors. Both models are now included with 5 colors each.
 
 ### 7. Discontinued Colors
 - `PR00` (Midnight Cherry Red): Was briefly available, now discontinued. Compositor may still work but we don't download.
@@ -212,6 +216,8 @@ Format: `{model_variant}_{color_code}_{wheel_code}.png`
 | Highland M3 Performance | `m3hp_PR01_W30P.png` |
 | Legacy Model Y | `my_PPSW_WY19B.png` |
 | Juniper Model Y | `myj_PX02_WY18P.png` |
+| Model S | `ms_PPSW_WT19.png` |
+| Model X | `mx_PPSB_WX20.png` |
 
 ---
 
@@ -224,7 +230,9 @@ Format: `{model_variant}_{color_code}_{wheel_code}.png`
 | Highland M3 Performance | 7 | 1 | 7 | PNG |
 | Legacy Model Y | 5 | 5 | 25 | PNG |
 | Juniper Model Y | 3 | 1 | 3 | PNG |
-| **Total** | | | **63** | **~6.1 MB** |
+| Model S | 5 | 1 | 5 | PNG |
+| Model X | 5 | 1 | 5 | PNG |
+| **Total** | | | **73** | **~7 MB** |
 
 ---
 
