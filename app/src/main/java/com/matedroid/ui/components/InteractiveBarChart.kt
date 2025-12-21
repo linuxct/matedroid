@@ -57,8 +57,9 @@ fun InteractiveBarChart(
     val maxValue = data.maxOfOrNull { it.value } ?: 1.0
     val density = LocalDensity.current
 
-    var selectedBarIndex by remember { mutableStateOf<Int?>(null) }
-    var tooltipPosition by remember { mutableStateOf(Offset.Zero) }
+    // Reset selection when data changes to avoid IndexOutOfBoundsException
+    var selectedBarIndex by remember(data) { mutableStateOf<Int?>(null) }
+    var tooltipPosition by remember(data) { mutableStateOf(Offset.Zero) }
 
     Box(modifier = modifier) {
         Canvas(
@@ -153,8 +154,8 @@ fun InteractiveBarChart(
             }
         }
 
-        // Tooltip
-        selectedBarIndex?.let { index ->
+        // Tooltip - with bounds check for safety
+        selectedBarIndex?.takeIf { it in data.indices }?.let { index ->
             val barData = data[index]
             val yAxisWidth = with(density) { 32.dp.toPx() }
             val chartWidth = with(density) { (modifier.toString().toFloatOrNull() ?: 300f) }
