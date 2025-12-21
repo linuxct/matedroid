@@ -14,13 +14,28 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+
+data class UpdatesStats(
+    val totalUpdates: Int = 0,
+    val meanDaysBetweenUpdates: Double = 0.0,
+    val oldestVersion: String? = null,
+    val newestVersion: String? = null
+)
+
+data class MonthlyUpdateCount(
+    val yearMonth: YearMonth,
+    val count: Int
+)
 
 data class SoftwareVersionsUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val updates: List<SoftwareVersionItem> = emptyList(),
+    val stats: UpdatesStats = UpdatesStats(),
+    val monthlyData: List<MonthlyUpdateCount> = emptyList(),
     val longestInstalledId: Int? = null,
     val error: String? = null,
     val filterMonths: Int? = null  // null = All time, 6 = Last 6 months, 12 = Last year
@@ -31,7 +46,8 @@ data class SoftwareVersionItem(
     val version: String,
     val installDate: LocalDateTime?,
     val endDate: LocalDateTime?,
-    val durationDays: Long?,
+    val updateDurationMinutes: Long?,  // Duration of the update process (start to end)
+    val daysInstalled: Long?,          // Days the version was installed
     val isCurrent: Boolean
 )
 
@@ -110,43 +126,137 @@ class SoftwareVersionsViewModel @Inject constructor(
             allUpdates
         }
 
+        // Calculate days installed for each version
+        // The first item (index 0) is the current/newest version
+        // Days installed = next version's start date - this version's start date
+        // For current version: now - start date
         val items = filteredUpdates.mapIndexed { index, update ->
             val startDate = parseDate(update.startDate)
             val endDate = parseDate(update.endDate)
-            val isCurrent = index == 0 && endDate == null
+            val isCurrent = index == 0 && (endDate == null || startDate == endDate)
 
-            val durationDays = when {
+            // Duration of the update process itself (from start to end of update)
+            val updateDurationMinutes = if (startDate != null && endDate != null && startDate != endDate) {
+                Duration.between(startDate, endDate).toMinutes()
+            } else {
+                null
+            }
+
+            // Days installed = time until next version was installed
+            // For current version, calculate from install date to now
+            val daysInstalled: Long? = when {
                 startDate == null -> null
-                endDate != null -> Duration.between(startDate, endDate).toDays()
                 isCurrent -> Duration.between(startDate, LocalDateTime.now()).toDays()
+                index + 1 < filteredUpdates.size -> {
+                    // Get the next version's start date (which is when this version stopped being used)
+                    val nextVersionStartDate = parseDate(filteredUpdates[index + 1].startDate)
+                    if (nextVersionStartDate != null) {
+                        Duration.between(nextVersionStartDate, startDate).toDays()
+                    } else {
+                        null
+                    }
+                }
                 else -> null
             }
 
             SoftwareVersionItem(
                 id = update.id ?: 0,
-                version = update.version ?: "Unknown",
+                version = cleanVersion(update.version),
                 installDate = startDate,
                 endDate = endDate,
-                durationDays = durationDays,
+                updateDurationMinutes = updateDurationMinutes,
+                daysInstalled = daysInstalled,
                 isCurrent = isCurrent
             )
         }
 
         // Find the version that stayed installed the longest (among displayed ones)
         val longestId = items
-            .filter { it.durationDays != null }
-            .maxByOrNull { it.durationDays!! }
+            .filter { it.daysInstalled != null && it.daysInstalled > 0 }
+            .maxByOrNull { it.daysInstalled!! }
             ?.id
+
+        // Calculate stats
+        val stats = calculateStats(items)
+
+        // Calculate monthly data for chart
+        val monthlyData = calculateMonthlyData(items, months)
 
         _uiState.update {
             it.copy(
                 isLoading = false,
                 isRefreshing = false,
                 updates = items,
+                stats = stats,
+                monthlyData = monthlyData,
                 longestInstalledId = longestId,
                 error = null
             )
         }
+    }
+
+    private fun calculateStats(items: List<SoftwareVersionItem>): UpdatesStats {
+        if (items.isEmpty()) return UpdatesStats()
+
+        val totalUpdates = items.size
+        val newestVersion = items.firstOrNull()?.version
+        val oldestVersion = items.lastOrNull()?.version
+
+        // Calculate mean days between updates
+        val installDates = items.mapNotNull { it.installDate }.sortedDescending()
+        val meanDaysBetween = if (installDates.size >= 2) {
+            val intervals = installDates.zipWithNext { newer, older ->
+                Duration.between(older, newer).toDays().toDouble()
+            }
+            intervals.average()
+        } else {
+            0.0
+        }
+
+        return UpdatesStats(
+            totalUpdates = totalUpdates,
+            meanDaysBetweenUpdates = meanDaysBetween,
+            oldestVersion = oldestVersion,
+            newestVersion = newestVersion
+        )
+    }
+
+    private fun calculateMonthlyData(items: List<SoftwareVersionItem>, filterMonths: Int?): List<MonthlyUpdateCount> {
+        if (items.isEmpty()) return emptyList()
+
+        // Group updates by month
+        val monthCounts = items
+            .mapNotNull { it.installDate }
+            .groupBy { YearMonth.from(it) }
+            .mapValues { it.value.size }
+
+        // Determine the range of months to show
+        val maxMonths = when {
+            filterMonths != null -> filterMonths
+            else -> 24  // For "all time", show max 24 months
+        }
+
+        val now = YearMonth.now()
+        val startMonth = now.minusMonths(maxMonths.toLong() - 1)
+
+        // Create a list of all months in range with counts (including zeros)
+        return (0 until maxMonths).map { offset ->
+            val month = startMonth.plusMonths(offset.toLong())
+            MonthlyUpdateCount(
+                yearMonth = month,
+                count = monthCounts[month] ?: 0
+            )
+        }
+    }
+
+    /**
+     * Remove the hash suffix from version strings.
+     * "2025.44.25.1 abc123def456" -> "2025.44.25.1"
+     */
+    private fun cleanVersion(version: String?): String {
+        if (version == null) return "Unknown"
+        // Split by space and take only the first part (the version number)
+        return version.split(" ").firstOrNull() ?: version
     }
 
     private fun parseDate(dateStr: String?): LocalDateTime? {

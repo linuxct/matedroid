@@ -1,5 +1,6 @@
 package com.matedroid.ui.screens.updates
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,15 +18,18 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,12 +50,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.matedroid.ui.theme.CarColorPalette
 import com.matedroid.ui.theme.CarColorPalettes
 import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
 
 enum class UpdatesDateFilter(val label: String, val months: Int?) {
     LAST_6_MONTHS("Last 6 months", 6),
@@ -124,8 +139,7 @@ fun SoftwareVersionsScreen(
                 }
             } else {
                 SoftwareVersionsContent(
-                    updates = uiState.updates,
-                    longestInstalledId = uiState.longestInstalledId,
+                    uiState = uiState,
                     selectedFilter = selectedFilter,
                     palette = palette,
                     onFilterSelected = { applyDateFilter(it) }
@@ -137,8 +151,7 @@ fun SoftwareVersionsScreen(
 
 @Composable
 private fun SoftwareVersionsContent(
-    updates: List<SoftwareVersionItem>,
-    longestInstalledId: Int?,
+    uiState: SoftwareVersionsUiState,
     selectedFilter: UpdatesDateFilter,
     palette: CarColorPalette,
     onFilterSelected: (UpdatesDateFilter) -> Unit
@@ -156,8 +169,26 @@ private fun SoftwareVersionsContent(
             )
         }
 
+        // Overview Card
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            OverviewCard(
+                stats = uiState.stats,
+                palette = palette
+            )
+        }
+
+        // Bar Chart
+        if (uiState.monthlyData.isNotEmpty()) {
+            item {
+                MonthlyUpdatesChart(
+                    monthlyData = uiState.monthlyData,
+                    palette = palette
+                )
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Update History",
                 style = MaterialTheme.typography.titleMedium,
@@ -165,7 +196,7 @@ private fun SoftwareVersionsContent(
             )
         }
 
-        if (updates.isEmpty()) {
+        if (uiState.updates.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -188,15 +219,233 @@ private fun SoftwareVersionsContent(
                 }
             }
         } else {
-            items(updates, key = { it.id }) { update ->
+            items(uiState.updates, key = { it.id }) { update ->
                 SoftwareVersionCard(
                     update = update,
-                    isLongestInstalled = update.id == longestInstalledId,
+                    isLongestInstalled = update.id == uiState.longestInstalledId,
                     palette = palette
                 )
             }
         }
     }
+}
+
+@Composable
+private fun OverviewCard(
+    stats: UpdatesStats,
+    palette: CarColorPalette
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = palette.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.SystemUpdate,
+                    contentDescription = null,
+                    tint = palette.accent
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Overview",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    label = "Total Updates",
+                    value = stats.totalUpdates.toString(),
+                    palette = palette
+                )
+                StatItem(
+                    label = "Avg. Interval",
+                    value = "${stats.meanDaysBetweenUpdates.roundToInt()} days",
+                    palette = palette
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = palette.onSurfaceVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Newest",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.onSurfaceVariant
+                    )
+                    Text(
+                        text = stats.newestVersion ?: "--",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = palette.onSurface
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Oldest",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.onSurfaceVariant
+                    )
+                    Text(
+                        text = stats.oldestVersion ?: "--",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = palette.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatItem(
+    label: String,
+    value: String,
+    palette: CarColorPalette
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = palette.accent
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun MonthlyUpdatesChart(
+    monthlyData: List<MonthlyUpdateCount>,
+    palette: CarColorPalette
+) {
+    val textMeasurer = rememberTextMeasurer()
+    val barColor = palette.accent
+    val labelColor = palette.onSurfaceVariant
+    val maxCount = monthlyData.maxOfOrNull { it.count } ?: 1
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Updates per Month",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            ) {
+                val barWidth = size.width / monthlyData.size
+                val maxBarHeight = size.height - 24.dp.toPx()  // Leave space for labels
+
+                monthlyData.forEachIndexed { index, data ->
+                    val barHeight = if (maxCount > 0) {
+                        (data.count.toFloat() / maxCount) * maxBarHeight
+                    } else {
+                        0f
+                    }
+
+                    // Draw bar
+                    if (barHeight > 0) {
+                        drawRect(
+                            color = barColor,
+                            topLeft = Offset(
+                                x = index * barWidth + barWidth * 0.15f,
+                                y = maxBarHeight - barHeight
+                            ),
+                            size = Size(
+                                width = barWidth * 0.7f,
+                                height = barHeight
+                            )
+                        )
+                    }
+
+                    // Draw month label for every 3rd month or if showing 6 months
+                    if (monthlyData.size <= 6 || index % 3 == 0) {
+                        val monthLabel = data.yearMonth.format(DateTimeFormatter.ofPattern("MMM"))
+                        drawMonthLabel(
+                            textMeasurer = textMeasurer,
+                            text = monthLabel,
+                            x = index * barWidth + barWidth / 2,
+                            y = size.height - 4.dp.toPx(),
+                            color = labelColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawMonthLabel(
+    textMeasurer: TextMeasurer,
+    text: String,
+    x: Float,
+    y: Float,
+    color: Color
+) {
+    val textLayoutResult = textMeasurer.measure(
+        text = text,
+        style = TextStyle(
+            fontSize = 9.sp,
+            textAlign = TextAlign.Center
+        )
+    )
+    drawText(
+        textLayoutResult = textLayoutResult,
+        color = color,
+        topLeft = Offset(
+            x = x - textLayoutResult.size.width / 2,
+            y = y - textLayoutResult.size.height
+        )
+    )
 }
 
 @Composable
@@ -326,11 +575,35 @@ private fun SoftwareVersionCard(
                     )
                 }
 
-                // Duration
+                // Days installed
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = if (update.isCurrent) palette.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Days",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (update.isCurrent) palette.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = formatDaysInstalled(update.daysInstalled),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = if (update.isCurrent) palette.onSurface else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Update duration (hh:mm)
                 Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Schedule,
+                            imageVector = Icons.Default.Timer,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
                             tint = if (update.isCurrent) palette.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant
@@ -343,7 +616,7 @@ private fun SoftwareVersionCard(
                         )
                     }
                     Text(
-                        text = formatDuration(update.durationDays),
+                        text = formatDurationHhMm(update.updateDurationMinutes),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = if (update.isCurrent) palette.onSurface else MaterialTheme.colorScheme.onSurface
@@ -354,29 +627,14 @@ private fun SoftwareVersionCard(
     }
 }
 
-private fun formatDuration(days: Long?): String {
-    if (days == null) return "Unknown"
+private fun formatDaysInstalled(days: Long?): String {
+    if (days == null || days < 0) return "--"
+    return "$days"
+}
 
-    return when {
-        days == 0L -> "< 1 day"
-        days == 1L -> "1 day"
-        days < 30 -> "$days days"
-        days < 60 -> {
-            val weeks = days / 7
-            if (weeks == 1L) "1 week" else "$weeks weeks"
-        }
-        days < 365 -> {
-            val months = days / 30
-            if (months == 1L) "~1 month" else "~$months months"
-        }
-        else -> {
-            val years = days / 365
-            val remainingMonths = (days % 365) / 30
-            if (remainingMonths > 0) {
-                if (years == 1L) "~1 year $remainingMonths mo" else "~$years years $remainingMonths mo"
-            } else {
-                if (years == 1L) "~1 year" else "~$years years"
-            }
-        }
-    }
+private fun formatDurationHhMm(minutes: Long?): String {
+    if (minutes == null || minutes < 0) return "--"
+    val hours = minutes / 60
+    val mins = minutes % 60
+    return "%d:%02d".format(hours, mins)
 }
