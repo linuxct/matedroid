@@ -700,26 +700,28 @@ private fun ChartCard(
                     }
                 }
 
-                // Draw min/max labels
+                // Draw Y-axis labels for all grid lines
                 drawContext.canvas.nativeCanvas.apply {
                     val textPaint = Paint().apply {
                         this.color = surfaceColor.copy(alpha = 0.7f).toArgb()
-                        textSize = 28f
+                        textSize = 26f
                         isAntiAlias = true
                     }
 
-                    drawText(
-                        "%.0f".format(maxValue) + " $unit",
-                        8f,
-                        textPaint.textSize + 4f,
-                        textPaint
-                    )
-                    drawText(
-                        "%.0f".format(minValue) + " $unit",
-                        8f,
-                        height - 8f,
-                        textPaint
-                    )
+                    for (i in 0..gridLineCount) {
+                        val y = height * i / gridLineCount
+                        val value = maxValue - (range * i / gridLineCount)
+                        val label = "%.0f".format(value) + " $unit"
+
+                        // Position the label: top labels below line, bottom labels above line
+                        val textY = when (i) {
+                            0 -> y + textPaint.textSize + 2f
+                            gridLineCount -> y - 4f
+                            else -> y + textPaint.textSize / 3
+                        }
+
+                        drawText(label, 8f, textY, textPaint)
+                    }
                 }
             }
         }
