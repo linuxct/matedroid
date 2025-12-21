@@ -921,7 +921,7 @@ private fun VehicleInfoCard(
                     modifier = Modifier.weight(1f)
                 )
                 CompactInfoItem(
-                    icon = Icons.Default.DriveEta,
+                    icon = CustomIcons.SteeringWheel,
                     label = "Drives",
                     value = totalDrives?.let { "%,d".format(it) } ?: "--",
                     modifier = Modifier.weight(1f)
@@ -1254,7 +1254,7 @@ private fun QuickLinksRow(
         )
         QuickLinkItem(
             title = "Drives",
-            icon = Icons.Filled.DirectionsCar,
+            icon = CustomIcons.SteeringWheel,
             palette = palette,
             onClick = onNavigateToDrives
         )
