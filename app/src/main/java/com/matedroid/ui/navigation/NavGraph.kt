@@ -22,29 +22,62 @@ import com.matedroid.ui.screens.settings.SettingsScreen
 sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
     data object Dashboard : Screen("dashboard")
-    data object Charges : Screen("charges/{carId}") {
-        fun createRoute(carId: Int) = "charges/$carId"
+    data object Charges : Screen("charges/{carId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "charges/$carId?exteriorColor=$exteriorColor"
+            } else {
+                "charges/$carId"
+            }
+        }
     }
-    data object ChargeDetail : Screen("charges/{carId}/detail/{chargeId}") {
-        fun createRoute(carId: Int, chargeId: Int) = "charges/$carId/detail/$chargeId"
+    data object ChargeDetail : Screen("charges/{carId}/detail/{chargeId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, chargeId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "charges/$carId/detail/$chargeId?exteriorColor=$exteriorColor"
+            } else {
+                "charges/$carId/detail/$chargeId"
+            }
+        }
     }
-    data object Drives : Screen("drives/{carId}") {
-        fun createRoute(carId: Int) = "drives/$carId"
+    data object Drives : Screen("drives/{carId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "drives/$carId?exteriorColor=$exteriorColor"
+            } else {
+                "drives/$carId"
+            }
+        }
     }
-    data object DriveDetail : Screen("drives/{carId}/detail/{driveId}") {
-        fun createRoute(carId: Int, driveId: Int) = "drives/$carId/detail/$driveId"
+    data object DriveDetail : Screen("drives/{carId}/detail/{driveId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, driveId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "drives/$carId/detail/$driveId?exteriorColor=$exteriorColor"
+            } else {
+                "drives/$carId/detail/$driveId"
+            }
+        }
     }
-    data object Battery : Screen("battery/{carId}?efficiency={efficiency}") {
-        fun createRoute(carId: Int, efficiency: Double? = null): String {
-            return if (efficiency != null) {
-                "battery/$carId?efficiency=$efficiency"
+    data object Battery : Screen("battery/{carId}?efficiency={efficiency}&exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, efficiency: Double? = null, exteriorColor: String? = null): String {
+            val params = mutableListOf<String>()
+            if (efficiency != null) params.add("efficiency=$efficiency")
+            if (exteriorColor != null) params.add("exteriorColor=$exteriorColor")
+            return if (params.isNotEmpty()) {
+                "battery/$carId?${params.joinToString("&")}"
             } else {
                 "battery/$carId"
             }
         }
     }
-    data object Mileage : Screen("mileage/{carId}") {
-        fun createRoute(carId: Int) = "mileage/$carId"
+    data object Mileage : Screen("mileage/{carId}?exteriorColor={exteriorColor}") {
+        fun createRoute(carId: Int, exteriorColor: String? = null): String {
+            return if (exteriorColor != null) {
+                "mileage/$carId?exteriorColor=$exteriorColor"
+            } else {
+                "mileage/$carId"
+            }
+        }
     }
     data object Updates : Screen("updates/{carId}") {
         fun createRoute(carId: Int) = "updates/$carId"
@@ -85,17 +118,17 @@ fun NavGraph(
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
-                onNavigateToCharges = { carId ->
-                    navController.navigate(Screen.Charges.createRoute(carId))
+                onNavigateToCharges = { carId, exteriorColor ->
+                    navController.navigate(Screen.Charges.createRoute(carId, exteriorColor))
                 },
-                onNavigateToDrives = { carId ->
-                    navController.navigate(Screen.Drives.createRoute(carId))
+                onNavigateToDrives = { carId, exteriorColor ->
+                    navController.navigate(Screen.Drives.createRoute(carId, exteriorColor))
                 },
-                onNavigateToBattery = { carId, efficiency ->
-                    navController.navigate(Screen.Battery.createRoute(carId, efficiency))
+                onNavigateToBattery = { carId, efficiency, exteriorColor ->
+                    navController.navigate(Screen.Battery.createRoute(carId, efficiency, exteriorColor))
                 },
-                onNavigateToMileage = { carId ->
-                    navController.navigate(Screen.Mileage.createRoute(carId))
+                onNavigateToMileage = { carId, exteriorColor ->
+                    navController.navigate(Screen.Mileage.createRoute(carId, exteriorColor))
                 }
             )
         }
@@ -103,15 +136,22 @@ fun NavGraph(
         composable(
             route = Screen.Charges.route,
             arguments = listOf(
-                navArgument("carId") { type = NavType.IntType }
+                navArgument("carId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             ChargesScreen(
                 carId = carId,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToChargeDetail = { chargeId ->
-                    navController.navigate(Screen.ChargeDetail.createRoute(carId, chargeId))
+                    navController.navigate(Screen.ChargeDetail.createRoute(carId, chargeId, exteriorColor))
                 }
             )
         }
@@ -120,14 +160,21 @@ fun NavGraph(
             route = Screen.ChargeDetail.route,
             arguments = listOf(
                 navArgument("carId") { type = NavType.IntType },
-                navArgument("chargeId") { type = NavType.IntType }
+                navArgument("chargeId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
             val chargeId = backStackEntry.arguments?.getInt("chargeId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             ChargeDetailScreen(
                 carId = carId,
                 chargeId = chargeId,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -135,15 +182,22 @@ fun NavGraph(
         composable(
             route = Screen.Drives.route,
             arguments = listOf(
-                navArgument("carId") { type = NavType.IntType }
+                navArgument("carId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             DrivesScreen(
                 carId = carId,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDriveDetail = { driveId ->
-                    navController.navigate(Screen.DriveDetail.createRoute(carId, driveId))
+                    navController.navigate(Screen.DriveDetail.createRoute(carId, driveId, exteriorColor))
                 }
             )
         }
@@ -152,14 +206,21 @@ fun NavGraph(
             route = Screen.DriveDetail.route,
             arguments = listOf(
                 navArgument("carId") { type = NavType.IntType },
-                navArgument("driveId") { type = NavType.IntType }
+                navArgument("driveId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
             val driveId = backStackEntry.arguments?.getInt("driveId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             DriveDetailScreen(
                 carId = carId,
                 driveId = driveId,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -171,15 +232,22 @@ fun NavGraph(
                 navArgument("efficiency") {
                     type = NavType.FloatType
                     defaultValue = 0f
+                },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
             val efficiency = backStackEntry.arguments?.getFloat("efficiency")?.toDouble()
                 ?.takeIf { it > 0 }
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             BatteryScreen(
                 carId = carId,
                 efficiency = efficiency,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -187,12 +255,19 @@ fun NavGraph(
         composable(
             route = Screen.Mileage.route,
             arguments = listOf(
-                navArgument("carId") { type = NavType.IntType }
+                navArgument("carId") { type = NavType.IntType },
+                navArgument("exteriorColor") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getInt("carId") ?: return@composable
+            val exteriorColor = backStackEntry.arguments?.getString("exteriorColor")
             MileageScreen(
                 carId = carId,
+                exteriorColor = exteriorColor,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

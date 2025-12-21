@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +57,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.matedroid.data.api.models.DriveData
+import com.matedroid.ui.theme.CarColorPalette
+import com.matedroid.ui.theme.CarColorPalettes
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -72,6 +75,7 @@ enum class DriveDateFilter(val label: String, val days: Long?) {
 @Composable
 fun DrivesScreen(
     carId: Int,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     onNavigateToDriveDetail: (driveId: Int) -> Unit,
     viewModel: DrivesViewModel = hiltViewModel()
@@ -79,6 +83,8 @@ fun DrivesScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedFilter by remember { mutableStateOf(DriveDateFilter.ALL_TIME) }
+    val isDarkTheme = isSystemInDarkTheme()
+    val palette = CarColorPalettes.forExteriorColor(exteriorColor, isDarkTheme)
 
     LaunchedEffect(carId) {
         viewModel.setCarId(carId)
@@ -140,6 +146,7 @@ fun DrivesScreen(
                     drives = uiState.drives,
                     summary = uiState.summary,
                     selectedFilter = selectedFilter,
+                    palette = palette,
                     onFilterSelected = { applyDateFilter(it) },
                     onDriveClick = onNavigateToDriveDetail
                 )
@@ -154,6 +161,7 @@ private fun DrivesContent(
     drives: List<DriveData>,
     summary: DrivesSummary,
     selectedFilter: DriveDateFilter,
+    palette: CarColorPalette,
     onFilterSelected: (DriveDateFilter) -> Unit,
     onDriveClick: (driveId: Int) -> Unit
 ) {
@@ -165,12 +173,13 @@ private fun DrivesContent(
         item {
             DateFilterChips(
                 selectedFilter = selectedFilter,
+                palette = palette,
                 onFilterSelected = onFilterSelected
             )
         }
 
         item {
-            SummaryCard(summary = summary)
+            SummaryCard(summary = summary, palette = palette)
         }
 
         item {
@@ -219,6 +228,7 @@ private fun DrivesContent(
 @Composable
 private fun DateFilterChips(
     selectedFilter: DriveDateFilter,
+    palette: CarColorPalette,
     onFilterSelected: (DriveDateFilter) -> Unit
 ) {
     LazyRow(
@@ -230,8 +240,8 @@ private fun DateFilterChips(
                 onClick = { onFilterSelected(filter) },
                 label = { Text(filter.label) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    selectedContainerColor = palette.surface,
+                    selectedLabelColor = palette.onSurface
                 )
             )
         }
@@ -239,11 +249,11 @@ private fun DateFilterChips(
 }
 
 @Composable
-private fun SummaryCard(summary: DrivesSummary) {
+private fun SummaryCard(summary: DrivesSummary, palette: CarColorPalette) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -253,7 +263,7 @@ private fun SummaryCard(summary: DrivesSummary) {
                 text = "Summary",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = palette.onSurface
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -265,12 +275,14 @@ private fun SummaryCard(summary: DrivesSummary) {
                 SummaryItem(
                     icon = Icons.Default.DirectionsCar,
                     label = "Total Trips",
-                    value = summary.totalDrives.toString()
+                    value = summary.totalDrives.toString(),
+                    palette = palette
                 )
                 SummaryItem(
                     icon = Icons.Default.Route,
                     label = "Total Distance",
-                    value = "%.1f km".format(summary.totalDistanceKm)
+                    value = "%.1f km".format(summary.totalDistanceKm),
+                    palette = palette
                 )
             }
 
@@ -283,12 +295,14 @@ private fun SummaryCard(summary: DrivesSummary) {
                 SummaryItem(
                     icon = Icons.Default.Timer,
                     label = "Total Time",
-                    value = formatDuration(summary.totalDurationMin)
+                    value = formatDuration(summary.totalDurationMin),
+                    palette = palette
                 )
                 SummaryItem(
                     icon = Icons.Default.Speed,
                     label = "Max Speed",
-                    value = "${summary.maxSpeedKmh} km/h"
+                    value = "${summary.maxSpeedKmh} km/h",
+                    palette = palette
                 )
             }
         }
@@ -299,7 +313,8 @@ private fun SummaryCard(summary: DrivesSummary) {
 private fun SummaryItem(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    palette: CarColorPalette
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -309,20 +324,20 @@ private fun SummaryItem(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer
+            tint = palette.accent
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                color = palette.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = palette.onSurface
             )
         }
     }

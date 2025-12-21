@@ -56,7 +56,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.matedroid.ui.theme.CarColorPalette
+import com.matedroid.ui.theme.CarColorPalettes
 import com.matedroid.ui.theme.StatusError
 import com.matedroid.ui.theme.StatusSuccess
 import com.matedroid.ui.theme.StatusWarning
@@ -76,11 +79,14 @@ private val DetailCyan = Color(0xFF00BCD4)
 fun BatteryScreen(
     carId: Int,
     efficiency: Double?,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val isDarkTheme = isSystemInDarkTheme()
+    val palette = CarColorPalettes.forExteriorColor(exteriorColor, isDarkTheme)
 
     LaunchedEffect(carId) {
         viewModel.setCarId(carId, efficiency)
@@ -132,6 +138,7 @@ fun BatteryScreen(
                     if (stats != null) {
                         BatteryHealthContent(
                             stats = stats,
+                            palette = palette,
                             onCardClick = { viewModel.showDetail() }
                         )
                     } else {
@@ -170,6 +177,7 @@ fun BatteryScreen(
 @Composable
 private fun BatteryHealthContent(
     stats: BatteryStats,
+    palette: CarColorPalette,
     onCardClick: () -> Unit
 ) {
     Column(
@@ -180,24 +188,24 @@ private fun BatteryHealthContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Capacity Section
-        CapacityCard(stats = stats, onClick = onCardClick)
+        CapacityCard(stats = stats, palette = palette, onClick = onCardClick)
 
         // Degradation Section
-        DegradationCard(stats = stats, onClick = onCardClick)
+        DegradationCard(stats = stats, palette = palette, onClick = onCardClick)
 
         // Range Section
-        RangeCard(stats = stats, onClick = onCardClick)
+        RangeCard(stats = stats, palette = palette, onClick = onCardClick)
     }
 }
 
 @Composable
-private fun CapacityCard(stats: BatteryStats, onClick: () -> Unit) {
+private fun CapacityCard(stats: BatteryStats, palette: CarColorPalette, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -210,20 +218,21 @@ private fun CapacityCard(stats: BatteryStats, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Filled.BatteryChargingFull,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = palette.accent,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Capacity",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onSurface
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Filled.Info,
                     contentDescription = "Info",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = palette.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -260,7 +269,7 @@ private fun CapacityCard(stats: BatteryStats, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Filled.Speed,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = palette.accent,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -268,12 +277,13 @@ private fun CapacityCard(stats: BatteryStats, onClick: () -> Unit) {
                     Text(
                         text = "%.1f Wh/km".format(stats.ratedEfficiency),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onSurface
                     )
                     Text(
                         text = "Rated",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = palette.onSurfaceVariant
                     )
                 }
             }
@@ -322,13 +332,13 @@ private fun CapacityValueCard(
 }
 
 @Composable
-private fun DegradationCard(stats: BatteryStats, onClick: () -> Unit) {
+private fun DegradationCard(stats: BatteryStats, palette: CarColorPalette, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -341,19 +351,20 @@ private fun DegradationCard(stats: BatteryStats, onClick: () -> Unit) {
                 Text(
                     text = "*",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = palette.accent
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Estimated degradation",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onSurface
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Filled.Info,
                     contentDescription = "Info",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = palette.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -369,7 +380,7 @@ private fun DegradationCard(stats: BatteryStats, onClick: () -> Unit) {
                 Text(
                     text = "Capacity",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = palette.onSurfaceVariant
                 )
                 Text(
                     text = "%.1f%%".format(stats.healthPercent),
@@ -389,7 +400,7 @@ private fun DegradationCard(stats: BatteryStats, onClick: () -> Unit) {
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = DegradationGreen,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                trackColor = palette.progressTrack,
                 strokeCap = StrokeCap.Round
             )
 
@@ -458,13 +469,13 @@ private fun LossValueCard(
 }
 
 @Composable
-private fun RangeCard(stats: BatteryStats, onClick: () -> Unit) {
+private fun RangeCard(stats: BatteryStats, palette: CarColorPalette, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -474,7 +485,8 @@ private fun RangeCard(stats: BatteryStats, onClick: () -> Unit) {
             Text(
                 text = "Range",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = palette.onSurface
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -517,12 +529,13 @@ private fun RangeCard(stats: BatteryStats, onClick: () -> Unit) {
                     Text(
                         text = "%.1f km".format(stats.rangeLoss),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onSurface
                     )
                     Text(
                         text = "Range loss",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = palette.onSurfaceVariant
                     )
                 }
             }

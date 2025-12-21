@@ -82,6 +82,7 @@ import java.time.format.DateTimeParseException
 fun ChargeDetailScreen(
     carId: Int,
     chargeId: Int,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: ChargeDetailViewModel = hiltViewModel()
 ) {

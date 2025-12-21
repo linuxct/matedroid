@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.matedroid.data.api.models.ChargeData
+import com.matedroid.ui.theme.CarColorPalette
+import com.matedroid.ui.theme.CarColorPalettes
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -71,6 +74,7 @@ enum class DateFilter(val label: String, val days: Long?) {
 @Composable
 fun ChargesScreen(
     carId: Int,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     onNavigateToChargeDetail: (Int) -> Unit = {},
     viewModel: ChargesViewModel = hiltViewModel()
@@ -78,6 +82,8 @@ fun ChargesScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedFilter by remember { mutableStateOf(DateFilter.ALL_TIME) }
+    val isDarkTheme = isSystemInDarkTheme()
+    val palette = CarColorPalettes.forExteriorColor(exteriorColor, isDarkTheme)
 
     LaunchedEffect(carId) {
         viewModel.setCarId(carId)
@@ -140,6 +146,7 @@ fun ChargesScreen(
                     summary = uiState.summary,
                     currencySymbol = uiState.currencySymbol,
                     selectedFilter = selectedFilter,
+                    palette = palette,
                     onFilterSelected = { applyDateFilter(it) },
                     onChargeClick = onNavigateToChargeDetail
                 )
@@ -155,6 +162,7 @@ private fun ChargesContent(
     summary: ChargesSummary,
     currencySymbol: String,
     selectedFilter: DateFilter,
+    palette: CarColorPalette,
     onFilterSelected: (DateFilter) -> Unit,
     onChargeClick: (Int) -> Unit
 ) {
@@ -166,12 +174,13 @@ private fun ChargesContent(
         item {
             DateFilterChips(
                 selectedFilter = selectedFilter,
+                palette = palette,
                 onFilterSelected = onFilterSelected
             )
         }
 
         item {
-            SummaryCard(summary = summary, currencySymbol = currencySymbol)
+            SummaryCard(summary = summary, currencySymbol = currencySymbol, palette = palette)
         }
 
         item {
@@ -221,6 +230,7 @@ private fun ChargesContent(
 @Composable
 private fun DateFilterChips(
     selectedFilter: DateFilter,
+    palette: CarColorPalette,
     onFilterSelected: (DateFilter) -> Unit
 ) {
     LazyRow(
@@ -232,8 +242,8 @@ private fun DateFilterChips(
                 onClick = { onFilterSelected(filter) },
                 label = { Text(filter.label) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    selectedContainerColor = palette.surface,
+                    selectedLabelColor = palette.onSurface
                 )
             )
         }
@@ -241,11 +251,11 @@ private fun DateFilterChips(
 }
 
 @Composable
-private fun SummaryCard(summary: ChargesSummary, currencySymbol: String) {
+private fun SummaryCard(summary: ChargesSummary, currencySymbol: String, palette: CarColorPalette) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -255,7 +265,7 @@ private fun SummaryCard(summary: ChargesSummary, currencySymbol: String) {
                 text = "Summary",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = palette.onSurface
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -267,12 +277,14 @@ private fun SummaryCard(summary: ChargesSummary, currencySymbol: String) {
                 SummaryItem(
                     icon = Icons.Default.ElectricBolt,
                     label = "Total Sessions",
-                    value = summary.totalCharges.toString()
+                    value = summary.totalCharges.toString(),
+                    palette = palette
                 )
                 SummaryItem(
                     icon = Icons.Default.BatteryChargingFull,
                     label = "Total Energy",
-                    value = "%.1f kWh".format(summary.totalEnergyAdded)
+                    value = "%.1f kWh".format(summary.totalEnergyAdded),
+                    palette = palette
                 )
             }
 
@@ -285,12 +297,14 @@ private fun SummaryCard(summary: ChargesSummary, currencySymbol: String) {
                 SummaryItem(
                     icon = Icons.Default.Paid,
                     label = "Total Cost",
-                    value = "$currencySymbol%.2f".format(summary.totalCost)
+                    value = "$currencySymbol%.2f".format(summary.totalCost),
+                    palette = palette
                 )
                 SummaryItem(
                     icon = Icons.Default.Paid,
                     label = "Avg Cost/Session",
-                    value = "$currencySymbol%.2f".format(summary.avgCostPerCharge)
+                    value = "$currencySymbol%.2f".format(summary.avgCostPerCharge),
+                    palette = palette
                 )
             }
         }
@@ -301,7 +315,8 @@ private fun SummaryCard(summary: ChargesSummary, currencySymbol: String) {
 private fun SummaryItem(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    palette: CarColorPalette
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -311,20 +326,20 @@ private fun SummaryItem(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer
+            tint = palette.accent
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                color = palette.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = palette.onSurface
             )
         }
     }

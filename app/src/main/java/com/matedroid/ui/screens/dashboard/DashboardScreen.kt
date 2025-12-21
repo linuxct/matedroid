@@ -102,10 +102,10 @@ import kotlin.math.roundToInt
 @Composable
 fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
-    onNavigateToCharges: (carId: Int) -> Unit = {},
-    onNavigateToDrives: (carId: Int) -> Unit = {},
-    onNavigateToBattery: (carId: Int, efficiency: Double?) -> Unit = { _, _ -> },
-    onNavigateToMileage: (carId: Int) -> Unit = {},
+    onNavigateToCharges: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
+    onNavigateToDrives: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
+    onNavigateToBattery: (carId: Int, efficiency: Double?, exteriorColor: String?) -> Unit = { _, _, _ -> },
+    onNavigateToMileage: (carId: Int, exteriorColor: String?) -> Unit = { _, _ -> },
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -151,18 +151,24 @@ fun DashboardScreen(
                         carExterior = uiState.selectedCarExterior,
                         resolvedAddress = uiState.resolvedAddress,
                         onNavigateToCharges = {
-                            uiState.selectedCarId?.let { onNavigateToCharges(it) }
+                            uiState.selectedCarId?.let { carId ->
+                                onNavigateToCharges(carId, uiState.selectedCarExterior?.exteriorColor)
+                            }
                         },
                         onNavigateToDrives = {
-                            uiState.selectedCarId?.let { onNavigateToDrives(it) }
+                            uiState.selectedCarId?.let { carId ->
+                                onNavigateToDrives(carId, uiState.selectedCarExterior?.exteriorColor)
+                            }
                         },
                         onNavigateToBattery = {
                             uiState.selectedCarId?.let { carId ->
-                                onNavigateToBattery(carId, uiState.selectedCarEfficiency)
+                                onNavigateToBattery(carId, uiState.selectedCarEfficiency, uiState.selectedCarExterior?.exteriorColor)
                             }
                         },
                         onNavigateToMileage = {
-                            uiState.selectedCarId?.let { onNavigateToMileage(it) }
+                            uiState.selectedCarId?.let { carId ->
+                                onNavigateToMileage(carId, uiState.selectedCarExterior?.exteriorColor)
+                            }
                         }
                     )
                 }
@@ -256,6 +262,9 @@ private fun DashboardContent(
     onNavigateToBattery: () -> Unit = {},
     onNavigateToMileage: () -> Unit = {}
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val palette = CarColorPalettes.forExteriorColor(carExterior?.exteriorColor, isDarkTheme)
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -287,6 +296,7 @@ private fun DashboardContent(
 
         // Fixed bottom quick links
         QuickLinksRow(
+            palette = palette,
             onNavigateToCharges = onNavigateToCharges,
             onNavigateToDrives = onNavigateToDrives,
             onNavigateToBattery = onNavigateToBattery,
@@ -964,6 +974,7 @@ private fun formatHoursMinutes(hours: Double): String {
 
 @Composable
 private fun QuickLinksRow(
+    palette: CarColorPalette,
     onNavigateToCharges: () -> Unit,
     onNavigateToDrives: () -> Unit,
     onNavigateToBattery: () -> Unit,
@@ -977,21 +988,25 @@ private fun QuickLinksRow(
         QuickLinkItem(
             title = "Charges",
             icon = Icons.Filled.ElectricBolt,
+            palette = palette,
             onClick = onNavigateToCharges
         )
         QuickLinkItem(
             title = "Battery",
             icon = Icons.Filled.Battery5Bar,
+            palette = palette,
             onClick = onNavigateToBattery
         )
         QuickLinkItem(
             title = "Drives",
             icon = Icons.Filled.DirectionsCar,
+            palette = palette,
             onClick = onNavigateToDrives
         )
         QuickLinkItem(
             title = "Mileage",
             icon = Icons.Filled.Timeline,
+            palette = palette,
             onClick = onNavigateToMileage
         )
     }
@@ -1002,13 +1017,14 @@ private fun QuickLinksRow(
 private fun RowScope.QuickLinkItem(
     title: String,
     icon: ImageVector,
+    palette: CarColorPalette,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.weight(1f),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(
@@ -1021,13 +1037,13 @@ private fun RowScope.QuickLinkItem(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = palette.accent
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = palette.onSurfaceVariant
             )
         }
     }

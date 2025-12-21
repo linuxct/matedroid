@@ -55,7 +55,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.matedroid.ui.theme.CarColorPalette
+import com.matedroid.ui.theme.CarColorPalettes
 import com.matedroid.ui.theme.StatusSuccess
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -67,11 +70,14 @@ private val ChartBlue = Color(0xFF42A5F5)
 @Composable
 fun MileageScreen(
     carId: Int,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: MileageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val isDarkTheme = isSystemInDarkTheme()
+    val palette = CarColorPalettes.forExteriorColor(exteriorColor, isDarkTheme)
 
     LaunchedEffect(carId) {
         viewModel.setCarId(carId)
@@ -120,6 +126,7 @@ fun MileageScreen(
                     YearOverviewContent(
                         uiState = uiState,
                         chartData = viewModel.getYearlyChartData(),
+                        palette = palette,
                         onYearClick = { viewModel.selectYear(it) }
                     )
                 }
@@ -171,6 +178,7 @@ fun MileageScreen(
 private fun YearOverviewContent(
     uiState: MileageUiState,
     chartData: List<Pair<Int, Double>>,
+    palette: CarColorPalette,
     onYearClick: (Int) -> Unit
 ) {
     LazyColumn(
@@ -185,14 +193,15 @@ private fun YearOverviewContent(
                 totalDistance = uiState.totalLifetimeDistance,
                 avgDistance = uiState.avgYearlyDistance,
                 avgLabel = "Avg/Year",
-                driveCount = uiState.totalLifetimeDriveCount
+                driveCount = uiState.totalLifetimeDriveCount,
+                palette = palette
             )
         }
 
         // Yearly chart
         if (chartData.isNotEmpty()) {
             item {
-                YearlyChartCard(chartData = chartData)
+                YearlyChartCard(chartData = chartData, palette = palette)
             }
         }
 
@@ -225,11 +234,11 @@ private fun YearOverviewContent(
 }
 
 @Composable
-private fun YearlyChartCard(chartData: List<Pair<Int, Double>>) {
+private fun YearlyChartCard(chartData: List<Pair<Int, Double>>, palette: CarColorPalette) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = palette.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -237,14 +246,15 @@ private fun YearlyChartCard(chartData: List<Pair<Int, Double>>) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = palette.accent,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Mileage by Year",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onSurface
                 )
             }
 
@@ -255,7 +265,7 @@ private fun YearlyChartCard(chartData: List<Pair<Int, Double>>) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
-                barColor = ChartBlue
+                barColor = palette.accent
             )
 
             // X-axis labels (years)
@@ -268,7 +278,7 @@ private fun YearlyChartCard(chartData: List<Pair<Int, Double>>) {
                     Text(
                         text = year.toString(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = palette.onSurfaceVariant
                     )
                 }
             }
@@ -732,27 +742,49 @@ private fun SummaryRow(
     totalDistance: Double,
     avgDistance: Double,
     avgLabel: String,
-    driveCount: Int
+    driveCount: Int,
+    palette: CarColorPalette? = null
 ) {
-    Row(
+    val containerColor = palette?.surface ?: MaterialTheme.colorScheme.surfaceVariant
+    val iconColor = palette?.accent ?: ChartBlue
+    val valueColor = palette?.onSurface ?: MaterialTheme.colorScheme.onSurface
+    val labelColor = palette?.onSurfaceVariant ?: MaterialTheme.colorScheme.onSurfaceVariant
+
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        SummaryItem(
-            icon = Icons.Filled.BarChart,
-            value = "%.1f km".format(totalDistance),
-            label = "Total"
-        )
-        SummaryItem(
-            icon = Icons.Filled.Speed,
-            value = "%.1f km".format(avgDistance),
-            label = avgLabel
-        )
-        SummaryItem(
-            icon = Icons.Filled.DirectionsCar,
-            value = driveCount.toString(),
-            label = "# of drives"
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            SummaryItem(
+                icon = Icons.Filled.BarChart,
+                value = "%.1f km".format(totalDistance),
+                label = "Total",
+                iconColor = iconColor,
+                valueColor = valueColor,
+                labelColor = labelColor
+            )
+            SummaryItem(
+                icon = Icons.Filled.Speed,
+                value = "%.1f km".format(avgDistance),
+                label = avgLabel,
+                iconColor = iconColor,
+                valueColor = valueColor,
+                labelColor = labelColor
+            )
+            SummaryItem(
+                icon = Icons.Filled.DirectionsCar,
+                value = driveCount.toString(),
+                label = "# of drives",
+                iconColor = iconColor,
+                valueColor = valueColor,
+                labelColor = labelColor
+            )
+        }
     }
 }
 
@@ -760,25 +792,29 @@ private fun SummaryRow(
 private fun SummaryItem(
     icon: ImageVector,
     value: String,
-    label: String
+    label: String,
+    iconColor: Color = ChartBlue,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = ChartBlue,
+            tint = iconColor,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = valueColor
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = labelColor
         )
     }
 }

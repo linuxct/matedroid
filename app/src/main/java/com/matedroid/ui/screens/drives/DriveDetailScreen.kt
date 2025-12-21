@@ -86,6 +86,7 @@ import java.time.format.DateTimeParseException
 fun DriveDetailScreen(
     carId: Int,
     driveId: Int,
+    exteriorColor: String? = null,
     onNavigateBack: () -> Unit,
     viewModel: DriveDetailViewModel = hiltViewModel()
 ) {
