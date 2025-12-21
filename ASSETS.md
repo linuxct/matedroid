@@ -33,12 +33,12 @@ https://static-assets.tesla.com/v1/compositor/?model=m3&view=STUD_3QTR&size=800&
 ### New Compositor (Highland/Juniper)
 - **URL**: `https://static-assets.tesla.com/configurator/compositor`
 - **For**: Model 3 Highland (2024+), Model Y Juniper (2025+)
-- **Output**: JPEG (no transparency)
-- **File size**: ~8-12 KB per image
+- **Output**: PNG with transparency (using `bkba_opt=1`)
+- **File size**: ~50-80 KB per image
 
 **Example URL**:
 ```
-https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&options=$MT370,$PPSW,$W38A,$IPB3&view=STUD_FRONT34&model=m3&size=800&bkba_opt=2
+https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&options=$MT370,$PPSW,$W38A,$IPB3&view=STUD_FRONT34&model=m3&size=800&bkba_opt=1
 ```
 
 **Parameters**:
@@ -49,7 +49,7 @@ https://static-assets.tesla.com/configurator/compositor?context=design_studio_2&
 | `view` | Camera angle | `STUD_FRONT34` |
 | `size` | Image width | `800` |
 | `options` | `$`-prefixed codes | `$MT370,$PPSW,$W38A,$IPB3` |
-| `bkba_opt` | Background option | `2` |
+| `bkba_opt` | Background (1=transparent PNG, 2=opaque JPEG) | `1` |
 
 **Important**: New compositor uses `$` prefix for all option codes!
 
@@ -192,22 +192,26 @@ The old compositor supports Model S (`ms`) and Model X (`mx`) with legacy colors
 ### 7. Discontinued Colors
 - `PR00` (Midnight Cherry Red): Was briefly available, now discontinued. Compositor may still work but we don't download.
 
-### 8. New Compositor Returns JPEG
-The new compositor returns JPEG format, while the old returns PNG. Both are handled in the app.
+### 8. bkba_opt Parameter Controls Output Format
+Both compositors support the `bkba_opt` parameter:
+- `bkba_opt=1`: Transparent PNG (used for all images)
+- `bkba_opt=2`: Opaque JPEG with background
+
+We use `bkba_opt=1` for all images to get consistent transparent PNGs.
 
 ---
 
 ## Asset File Naming Convention
 
-Format: `{model_variant}_{color_code}_{wheel_code}.{ext}`
+Format: `{model_variant}_{color_code}_{wheel_code}.png`
 
 | Model Variant | Example Filename |
 |---------------|------------------|
 | Legacy Model 3 | `m3_PMNG_W38B.png` |
-| Highland Model 3 | `m3h_PN01_W38A.jpg` |
-| Highland M3 Performance | `m3hp_PR01_W30P.jpg` |
+| Highland Model 3 | `m3h_PN01_W38A.png` |
+| Highland M3 Performance | `m3hp_PR01_W30P.png` |
 | Legacy Model Y | `my_PPSW_WY19B.png` |
-| Juniper Model Y | `myj_PX02_WY18P.jpg` |
+| Juniper Model Y | `myj_PX02_WY18P.png` |
 
 ---
 
@@ -216,10 +220,10 @@ Format: `{model_variant}_{color_code}_{wheel_code}.{ext}`
 | Model Variant | Colors | Wheels | Total Images | Format |
 |---------------|--------|--------|--------------|--------|
 | Legacy Model 3 | 7 | 3 | 21 | PNG |
-| Highland Model 3 | 7 | 1 | 7 | JPEG |
-| Highland M3 Performance | 7 | 1 | 7 | JPEG |
+| Highland Model 3 | 7 | 1 | 7 | PNG |
+| Highland M3 Performance | 7 | 1 | 7 | PNG |
 | Legacy Model Y | 5 | 5 | 25 | PNG |
-| Juniper Model Y | 3 | 1 | 3 | JPEG |
+| Juniper Model Y | 3 | 1 | 3 | PNG |
 | **Total** | | | **63** | **~6.1 MB** |
 
 ---
