@@ -730,13 +730,16 @@ private fun LocationCard(status: CarStatus, units: Units?, resolvedAddress: Stri
     val elevation = status.elevation
 
     // Location text: geofence name if available, then resolved address, then coordinates
-    val locationText = geofence ?: resolvedAddress ?: run {
-        if (latitude != null && longitude != null) {
-            "%.5f, %.5f".format(latitude, longitude)
-        } else {
-            "Unknown"
+    // Use takeIf to handle empty strings (API may return "" instead of null)
+    val locationText = geofence?.takeIf { it.isNotBlank() }
+        ?: resolvedAddress?.takeIf { it.isNotBlank() }
+        ?: run {
+            if (latitude != null && longitude != null) {
+                "%.5f, %.5f".format(latitude, longitude)
+            } else {
+                "Unknown"
+            }
         }
-    }
 
     // Format elevation with unit conversion
     val elevationText = elevation?.let {

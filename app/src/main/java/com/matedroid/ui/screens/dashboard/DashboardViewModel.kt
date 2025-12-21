@@ -154,9 +154,10 @@ class DashboardViewModel @Inject constructor(
     private fun fetchAddressIfNeeded(status: CarStatus) {
         val lat = status.latitude
         val lon = status.longitude
+        val hasGeofence = !status.geofence.isNullOrBlank()
 
         // Only fetch if no geofence, coordinates exist, and location changed
-        if (status.geofence == null && lat != null && lon != null) {
+        if (!hasGeofence && lat != null && lon != null) {
             val currentLocation = Pair(lat, lon)
             // Check if we've already geocoded this location (with some tolerance)
             if (lastGeocodedLocation?.let { (lastLat, lastLon) ->
@@ -172,7 +173,7 @@ class DashboardViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(resolvedAddress = address)
                 }
             }
-        } else if (status.geofence != null) {
+        } else if (hasGeofence) {
             // Clear resolved address if geofence is available
             _uiState.value = _uiState.value.copy(resolvedAddress = null)
             lastGeocodedLocation = null
@@ -186,10 +187,13 @@ class DashboardViewModel @Inject constructor(
                 delay(AUTO_REFRESH_INTERVAL_MS)
                 when (val result = repository.getCarStatus(carId)) {
                     is ApiResult.Success -> {
+                        val status = result.data.status
                         _uiState.value = _uiState.value.copy(
-                            carStatus = result.data.status,
+                            carStatus = status,
                             units = result.data.units
                         )
+                        // Update address if location changed
+                        fetchAddressIfNeeded(status)
                     }
                     is ApiResult.Error -> {
                         // Silently ignore errors during auto-refresh
