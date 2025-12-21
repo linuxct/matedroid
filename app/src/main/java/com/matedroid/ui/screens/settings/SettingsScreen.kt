@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -219,19 +218,13 @@ private fun SettingsContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Accept invalid certificates checkbox
+        // Accept invalid certificates toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
-                checked = uiState.acceptInvalidCerts,
-                onCheckedChange = onAcceptInvalidCertsChange,
-                enabled = !uiState.isTesting && !uiState.isSaving
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Accept invalid certificates",
@@ -243,6 +236,11 @@ private fun SettingsContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Switch(
+                checked = uiState.acceptInvalidCerts,
+                onCheckedChange = onAcceptInvalidCertsChange,
+                enabled = !uiState.isTesting && !uiState.isSaving
+            )
         }
 
         if (uiState.acceptInvalidCerts) {
@@ -369,7 +367,7 @@ private fun SettingsContent(
                 text = {
                     Text(
                         "When disabled (default), the following are hidden from the lists:\n\n" +
-                        "• Drives under 1 minute\n" +
+                        "• Drives under 1 minute or less than 0.1 km\n" +
                         "• Charges of 0.1 kWh or less\n\n" +
                         "These entries are still included in totals, averages, and statistics. " +
                         "Enable this setting to see all entries in the lists."

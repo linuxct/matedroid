@@ -67,6 +67,7 @@ class DrivesViewModel @Inject constructor(
 
     companion object {
         private const val MIN_DURATION_MINUTES = 1
+        private const val MIN_DISTANCE_KM = 0.1
     }
 
     fun setCarId(id: Int) {
@@ -122,11 +123,13 @@ class DrivesViewModel @Inject constructor(
                     val granularity = determineGranularity(startDate, endDate)
                     val chartData = calculateChartData(allDrives, granularity)
                     // Filter drives for display based on setting
+                    // Hide drives under 1 minute OR with distance < 0.1 km
                     val displayedDrives = if (showShortDrivesCharges) {
                         allDrives
                     } else {
                         allDrives.filter { drive ->
-                            (drive.durationMin ?: 0) >= MIN_DURATION_MINUTES
+                            (drive.durationMin ?: 0) >= MIN_DURATION_MINUTES &&
+                                (drive.distance ?: 0.0) >= MIN_DISTANCE_KM
                         }
                     }
                     _uiState.update {
