@@ -996,7 +996,7 @@ private fun CompactInfoItem(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "$label:",
+                text = label,
                 style = MaterialTheme.typography.bodySmall,
                 color = accentColor
             )
