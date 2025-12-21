@@ -7,40 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-21
+
 ### Added
-- Initial project structure with Kotlin and Jetpack Compose
-- Settings screen for TeslamateApi server configuration
-- Dashboard screen with real-time vehicle status display
-  - Battery level and range information
-  - Charging status with power, energy added, and time remaining
+- **Dashboard**: Real-time vehicle status with dynamic Tesla 3D car images
+  - Battery level, range, and charging status
   - Climate information (inside/outside temperature)
-  - Vehicle state (locked, location, odometer, software version)
-- Charges screen with charging history
-  - Summary statistics (total sessions, energy, cost)
-  - List of all charging sessions with details
-  - Date filtering (Last 7/30/90 days, Last year, All time)
-  - Navigation from Dashboard to Charges screen
-- TeslamateApi Retrofit client with all endpoints
-- Repository layer with ApiResult sealed class for error handling
-- Material Design 3 theming with Tesla-inspired colors
-- Dark/light mode support with dynamic colors on Android 12+
-- DataStore for secure settings persistence
-- Option to accept invalid/self-signed TLS certificates for self-hosted instances
-- Hilt dependency injection setup
-- Navigation component with Compose integration
-- Pull-to-refresh on Dashboard and Charges screens
-- Automatic navigation to Dashboard if server already configured
+  - Vehicle state (locked, location, software version)
+  - Car images adapt to your vehicle's color, model, and wheels
+- **Charges Screen**: Complete charging history
+  - Summary statistics (sessions, energy, cost)
+  - Date filtering (7/30/90 days, year, all time)
+  - Charge details with power/voltage/current profiles
+  - Interactive line graphs with Y-axis labels
+  - Map showing charge location
+- **Drives Screen**: Drive history with efficiency metrics
+  - Summary statistics (distance, energy, efficiency)
+  - Drive details with speed/power/battery/elevation graphs
+  - Route map visualization
+  - Start and end times with duration
+- **Mileage Screen**: Yearly/monthly/daily mileage breakdown
+  - Interactive drill-down (year → month → day)
+  - Bar charts with car accent colors
+  - Statistics per period
+- **Software Versions Screen**: Update history tracking
+  - Overview with total updates and average interval
+  - Monthly updates bar chart
+  - Duration and days installed per version
+  - Trophy badge for longest-installed version
+- **Battery Health Screen**: Battery degradation tracking
+- **Car Color Palettes**: Dynamic UI theming based on car exterior color
+  - Supports all Tesla colors including Highland/Juniper models
+  - Accent colors for UI elements and graphs
+- **Settings**: TeslamateApi server configuration
+  - URL and API token configuration
+  - Accept invalid certificates option for self-hosted
+  - Currency selection for cost display
 
-## [0.1.0] - Unreleased
+### Technical
+- Jetpack Compose with Material Design 3
+- Dark/light mode with dynamic colors (Android 12+)
+- Pull-to-refresh on all data screens
+- Hilt dependency injection
+- Retrofit + Moshi for API communication
+- DataStore for settings persistence
+- OSMDroid for map visualization
 
-Initial development release (MVP in progress).
+## [0.2.0] - 2025-12-20
 
-### Planned
-- Dashboard with real-time vehicle status
-- Charging history with statistics and charts
-- Drive history with efficiency metrics
-- Battery health tracking
-- Software update history
+### Added
+- Drives screen with drive history
+- Charge detail screen with graphs
+- Drive detail screen with route map
+- Mileage tracking screen
+- Software versions screen
+- Battery health screen
 
-[Unreleased]: https://github.com/yourusername/matedroid/compare/v0.1.0...HEAD
+## [0.1.0] - 2025-12-19
+
+### Added
+- Initial project setup
+- Settings screen for server configuration
+- Dashboard with basic vehicle status
+- Charges screen with history list
+
+[Unreleased]: https://github.com/yourusername/matedroid/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yourusername/matedroid/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/yourusername/matedroid/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/matedroid/releases/tag/v0.1.0
