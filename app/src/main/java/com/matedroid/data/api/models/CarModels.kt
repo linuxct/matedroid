@@ -20,8 +20,10 @@ data class CarData(
     @Json(name = "car_details") val carDetails: CarDetails? = null,
     @Json(name = "car_exterior") val carExterior: CarExterior? = null
 ) {
-    val displayName: String?
-        get() = name
+    val displayName: String
+        get() = name?.takeIf { it.isNotBlank() }
+            ?: carDetails?.model?.let { "Model $it" }
+            ?: "Tesla"
 }
 
 @JsonClass(generateAdapter = true)
