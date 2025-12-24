@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-12-24
+
 ### Added
 - **Software Versions**: Tap the external link icon next to any version to view release notes on NotATeslaApp
 - **Drives**: Filter drives by distance - Commute (< 10 km), Day trip (10-100 km), Road trip (> 100 km). Labels adapt to metric/imperial units.
@@ -92,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard with basic vehicle status
 - Charges screen with history list
 
-[Unreleased]: https://github.com/vide/matedroid/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/vide/matedroid/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/vide/matedroid/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/vide/matedroid/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/vide/matedroid/releases/tag/v0.6.0
 [0.5.1]: https://github.com/vide/matedroid/compare/v0.5.0...v0.5.1
