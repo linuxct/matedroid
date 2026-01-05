@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-05
+
 ### Added
 - **Model Y Juniper Performance**: Support for P74D trim with 21" Überturbine wheels and red brake calipers
 - **Model Y Juniper Premium**: Support for Premium (74/74D trim) with 19" Crossflow and 20" Helix 2.0 wheels in 6 colors (PPSW, PN01, PX02, PN00, PR01, PPSB)
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Charges**: Tap the Cost card to edit the charge cost directly in Teslamate (requires Teslamate Base URL in Settings)
 - **Settings**: New "Teslamate Settings" section with Base URL for direct Teslamate integration
 - **Mileage**: Info icon next to "Avg/Year" explaining how the calculation works
+- **CI/CD**: Debug APK now built alongside release APK
 
 ### Fixed
 - **Mileage**: Fixed incorrect Avg/Year calculation that counted calendar years instead of actual elapsed time since first drive (fixes #10)
@@ -116,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard with basic vehicle status
 - Charges screen with history list
 
-[Unreleased]: https://github.com/vide/matedroid/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/vide/matedroid/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/vide/matedroid/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/vide/matedroid/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/vide/matedroid/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/vide/matedroid/compare/v0.6.0...v0.6.1
