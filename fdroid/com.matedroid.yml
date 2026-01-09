@@ -23,6 +23,8 @@ Repo: https://github.com/vide/matedroid.git
 
 AllowedAPKSigningKeys: 92b34b1e456504fbacafcc3505d132c630eac75f0bd96878d4b769b20cb71a5b
 
+Binaries: https://github.com/vide/matedroid/releases/download/v%v/matedroid-%v.apk
+
 Builds:
   - versionName: 0.8.2
     versionCode: 13
@@ -30,7 +32,6 @@ Builds:
     subdir: app
     gradle:
       - yes
-    binary: https://github.com/vide/matedroid/releases/download/v%v/matedroid-%v.apk
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
