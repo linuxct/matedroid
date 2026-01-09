@@ -1,0 +1,1 @@
+• Build: Disable DependencyInfoBlock for F-Droid compatibility

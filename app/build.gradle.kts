@@ -19,8 +19,8 @@ android {
         applicationId = "com.matedroid"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.8.1"
+        versionCode = 13
+        versionName = "0.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,6 +72,13 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    // Disable dependency metadata for F-Droid compatibility
+    // This block is encrypted with Google's key and unreadable by anyone else
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 
