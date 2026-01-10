@@ -9,6 +9,19 @@
 * keep an always up-to-date README.md, but don't change its writing style.
 * always update `docs/DEVELOPMENT.md` and `docs/ASSETS.md` if anything related to those parts changes.
 
+## Charts and graphs
+
+### Histograms
+
+* Every histogram bar MUST be tappable, and when tapped it will show a tooltip with its value
+* The bars will be in the palette accent color
+
+### Line graphs
+
+* The line graph MUST have 4 labels on the Y axis: 1st quarter, half, 3rd quarter, end.
+* It MUST have 5 labels on the X axis (which is usually time): start, 1st quarter, half, 3rd quarter, end.
+* Tapping on one point of the graph will show a tooltip with the value of the Y axis.
+
 ## F-Droid and Fastlane
 
 * The app is published on F-Droid, which builds from source.
