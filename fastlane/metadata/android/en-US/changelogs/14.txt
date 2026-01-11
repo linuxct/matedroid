@@ -1,0 +1,8 @@
+• Stats: New records organized into swipeable categories (Drives, Battery, Weather, Distances)
+• Stats: New records - Longest driving streak, Longest gap without charging/driving, Biggest battery gain/drain
+• Stats: Tap "Longest Range" to see all drives in the record
+• Dashboard: Breathing glow effect around car when charging
+• Charges: Swipeable charts (Energy, Cost, Count) with AC/DC filter
+• Drives: Swipeable charts (Count, Time, Distance, Speed) with distance filter
+• Dashboard: Charging power gauge with AC/DC badge
+• Requires Android 10+ (was Android 8+)
