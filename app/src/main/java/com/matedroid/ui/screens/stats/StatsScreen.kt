@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -563,9 +566,20 @@ private data class RecordData(
     val onClick: (() -> Unit)?
 )
 
-/** Group of related records */
-private data class RecordGroup(
-    val records: List<RecordData>
+/**
+ * HARD CONSTRAINT: Each page displays exactly 6 record slots (3 rows × 2 columns).
+ * If a category has more than 6 records, it MUST be split into multiple pages.
+ * This ensures consistent page height and smooth swiping experience.
+ */
+private const val RECORDS_PER_PAGE = 6
+
+/** A page of records to display in the pager */
+private data class RecordPage(
+    val categoryTitle: String,
+    val categoryEmoji: String,
+    val records: List<RecordData>, // Max RECORDS_PER_PAGE items
+    val pageIndex: Int, // 0-based index within the category (for multi-page categories)
+    val totalPagesInCategory: Int // Total pages for this category
 )
 
 @Composable
@@ -579,16 +593,10 @@ private fun RecordsCard(
     onDayClick: (String) -> Unit,
     onRangeRecordClick: (MaxDistanceBetweenChargesRecord) -> Unit
 ) {
-    // Build list of record groups - each group starts on left column
-    val groups = mutableListOf<RecordGroup>()
-
-    // Group 1: Drive performance records
+    // Category 1: Drives
     val driveRecords = mutableListOf<RecordData>()
     quickStats.longestDrive?.let { drive ->
         driveRecords.add(RecordData("📏", "Longest Drive", "%.1f km".format(drive.distance), drive.startDate.take(10)) { onDriveClick(drive.driveId) })
-    }
-    quickStats.maxDistanceBetweenCharges?.let { record ->
-        driveRecords.add(RecordData("🔋", "Longest Range", "%.1f km".format(record.distance), "${record.fromDate.take(10)} → ${record.toDate.take(10)}") { onRangeRecordClick(record) })
     }
     quickStats.fastestDrive?.let { drive ->
         driveRecords.add(RecordData("🏎️", "Top Speed", "${drive.speedMax} km/h", drive.startDate.take(10)) { onDriveClick(drive.driveId) })
@@ -596,73 +604,104 @@ private fun RecordsCard(
     quickStats.mostEfficientDrive?.let { drive ->
         driveRecords.add(RecordData("🌱", "Most Efficient", "%.0f Wh/km".format(drive.efficiency ?: 0.0), drive.startDate.take(10)) { onDriveClick(drive.driveId) })
     }
-    if (driveRecords.isNotEmpty()) groups.add(RecordGroup(driveRecords))
+    quickStats.longestDrivingStreak?.let { streak ->
+        driveRecords.add(RecordData("🔥", "Longest Streak", "${streak.streakDays} days", "${streak.startDate} → ${streak.endDate}", null))
+    }
+    quickStats.mostDistanceDay?.let { day ->
+        driveRecords.add(RecordData("🛣️", "Most Distance Day", "%.1f km".format(day.totalDistance), day.day) { onDayClick(day.day) })
+    }
+    quickStats.busiestDay?.let { day ->
+        driveRecords.add(RecordData("📅", "Busiest Day", "${day.count} drives", day.day) { onDayClick(day.day) })
+    }
 
-    // Group 2: Elevation records
-    val elevationRecords = mutableListOf<RecordData>()
-    deepStats?.driveWithMaxElevation?.let { record ->
-        elevationRecords.add(RecordData("🏔️", "Highest Point", "${record.elevationM} m", record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    // Category 2: Battery
+    val batteryRecords = mutableListOf<RecordData>()
+    quickStats.biggestBatteryGainCharge?.let { record ->
+        batteryRecords.add(RecordData("🔋", "Biggest Gain", "+${record.percentChange}%", "${record.startLevel}% → ${record.endLevel}%") { onChargeClick(record.recordId) })
     }
-    deepStats?.driveWithMostClimbing?.let { record ->
-        elevationRecords.add(RecordData("⛰️", "Most Climbing", record.elevationGainM?.let { "+$it m" } ?: "N/A", record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    quickStats.biggestBatteryDrainDrive?.let { record ->
+        batteryRecords.add(RecordData("📉", "Biggest Drain", "-${record.percentChange}%", "${record.startLevel}% → ${record.endLevel}%") { onDriveClick(record.recordId) })
     }
-    if (elevationRecords.isNotEmpty()) groups.add(RecordGroup(elevationRecords))
-
-    // Group 3: Driving temperature records
-    val driveTempRecords = mutableListOf<RecordData>()
-    deepStats?.hottestDrive?.let { record ->
-        driveTempRecords.add(RecordData("🌡️", "Hottest Drive", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
-    }
-    deepStats?.coldestDrive?.let { record ->
-        driveTempRecords.add(RecordData("🧊", "Coldest Drive", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
-    }
-    if (driveTempRecords.isNotEmpty()) groups.add(RecordGroup(driveTempRecords))
-
-    // Group 4: Charge records
-    val chargeRecords = mutableListOf<RecordData>()
     quickStats.biggestCharge?.let { charge ->
-        chargeRecords.add(RecordData("⚡", "Biggest Charge", "%.0f kWh".format(charge.energyAdded), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
+        batteryRecords.add(RecordData("⚡", "Biggest Charge", "%.0f kWh".format(charge.energyAdded), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
     }
     deepStats?.chargeWithMaxPower?.let { record ->
-        chargeRecords.add(RecordData("⚡", "Peak Power", "${record.powerKw} kW", record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
+        batteryRecords.add(RecordData("⚡", "Peak Power", "${record.powerKw} kW", record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
     }
     quickStats.mostExpensiveCharge?.let { charge ->
         charge.cost?.let { cost ->
-            chargeRecords.add(RecordData("💸", "Most Expensive", "%.2f %s".format(cost, currencySymbol), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
+            batteryRecords.add(RecordData("💸", "Most Expensive", "%.2f %s".format(cost, currencySymbol), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
         }
     }
     quickStats.mostExpensivePerKwhCharge?.let { charge ->
         charge.cost?.let { cost ->
             if (charge.energyAdded > 0) {
-                chargeRecords.add(RecordData("📈", "Priciest/kWh", "%.3f %s".format(cost / charge.energyAdded, currencySymbol), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
+                batteryRecords.add(RecordData("📈", "Priciest/kWh", "%.3f %s".format(cost / charge.energyAdded, currencySymbol), charge.startDate.take(10)) { onChargeClick(charge.chargeId) })
             }
         }
     }
-    if (chargeRecords.isNotEmpty()) groups.add(RecordGroup(chargeRecords))
 
-    // Group 5: Charging temperature records
-    val chargeTempRecords = mutableListOf<RecordData>()
+    // Category 3: Weather & Altitude
+    val weatherRecords = mutableListOf<RecordData>()
+    deepStats?.driveWithMaxElevation?.let { record ->
+        weatherRecords.add(RecordData("🏔️", "Highest Point", "${record.elevationM} m", record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    }
+    deepStats?.driveWithMostClimbing?.let { record ->
+        weatherRecords.add(RecordData("⛰️", "Most Climbing", record.elevationGainM?.let { "+$it m" } ?: "N/A", record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    }
+    deepStats?.hottestDrive?.let { record ->
+        weatherRecords.add(RecordData("🌡️", "Hottest Drive", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    }
+    deepStats?.coldestDrive?.let { record ->
+        weatherRecords.add(RecordData("🧊", "Coldest Drive", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onDriveClick(record.driveId) })
+    }
     deepStats?.hottestCharge?.let { record ->
-        chargeTempRecords.add(RecordData("☀️", "Hottest Charge", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
+        weatherRecords.add(RecordData("☀️", "Hottest Charge", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
     }
     deepStats?.coldestCharge?.let { record ->
-        chargeTempRecords.add(RecordData("❄️", "Coldest Charge", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
+        weatherRecords.add(RecordData("❄️", "Coldest Charge", "%.1f°C".format(record.tempC), record.date?.take(10) ?: "") { onChargeClick(record.chargeId) })
     }
-    if (chargeTempRecords.isNotEmpty()) groups.add(RecordGroup(chargeTempRecords))
 
-    // Group 6: Day records
-    val dayRecords = mutableListOf<RecordData>()
-    quickStats.mostDistanceDay?.let { day ->
-        dayRecords.add(RecordData("🛣️", "Most Distance Day", "%.1f km".format(day.totalDistance), day.day) { onDayClick(day.day) })
+    // Category 4: Distances & Gaps
+    val distanceRecords = mutableListOf<RecordData>()
+    quickStats.maxDistanceBetweenCharges?.let { record ->
+        distanceRecords.add(RecordData("🔋", "Longest Range", "%.1f km".format(record.distance), "${record.fromDate.take(10)} → ${record.toDate.take(10)}") { onRangeRecordClick(record) })
     }
-    quickStats.busiestDay?.let { day ->
-        dayRecords.add(RecordData("📅", "Busiest Day", "${day.count} drives", day.day) { onDayClick(day.day) })
+    quickStats.longestGapWithoutCharging?.let { gap ->
+        distanceRecords.add(RecordData("⏰", "Longest w/o Charging", "%.1f days".format(gap.gapDays), "${gap.fromDate.take(10)} → ${gap.toDate.take(10)}", null))
     }
-    if (dayRecords.isNotEmpty()) groups.add(RecordGroup(dayRecords))
+    quickStats.longestGapWithoutDriving?.let { gap ->
+        distanceRecords.add(RecordData("🅿️", "Longest w/o Driving", "%.1f days".format(gap.gapDays), "${gap.fromDate.take(10)} → ${gap.toDate.take(10)}", null))
+    }
+    // Build list of all categories with their records
+    data class CategoryData(val title: String, val emoji: String, val records: List<RecordData>)
+    val allCategories = mutableListOf<CategoryData>()
+    if (driveRecords.isNotEmpty()) allCategories.add(CategoryData("Drives", "🚗", driveRecords))
+    if (batteryRecords.isNotEmpty()) allCategories.add(CategoryData("Battery", "🔋", batteryRecords))
+    if (weatherRecords.isNotEmpty()) allCategories.add(CategoryData("Weather & Altitude", "🌡️", weatherRecords))
+    if (distanceRecords.isNotEmpty()) allCategories.add(CategoryData("Distances", "📍", distanceRecords))
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    // Don't render anything if no categories
+    if (allCategories.isEmpty()) return
+
+    // Split categories into pages of max RECORDS_PER_PAGE records each
+    val pages = mutableListOf<RecordPage>()
+    allCategories.forEach { category ->
+        val chunks = category.records.chunked(RECORDS_PER_PAGE)
+        chunks.forEachIndexed { index, chunk ->
+            pages.add(RecordPage(
+                categoryTitle = category.title,
+                categoryEmoji = category.emoji,
+                records = chunk,
+                pageIndex = index,
+                totalPagesInCategory = chunks.size
+            ))
+        }
+    }
+
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+
+    Column {
         // Section header
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -683,15 +722,120 @@ private fun RecordsCard(
             )
         }
 
-        // Display records in 2-column grid, grouped by theme
-        // Each group starts on the left column (leaves blank space if previous group had odd count)
-        groups.forEach { group ->
-            group.records.chunked(2).forEach { rowRecords ->
+        Card(
+            colors = CardDefaults.cardColors(containerColor = palette.surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Pager with pages (fixed height for 6 records = 3 rows)
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { pageIndex ->
+                    val page = pages[pageIndex]
+                    RecordCategoryPage(
+                        page = page,
+                        palette = palette
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Page indicators - group by category with sub-dots for multi-page categories
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    rowRecords.forEach { record ->
+                    var pageOffset = 0
+                    allCategories.forEach { category ->
+                        val categoryPageCount = (category.records.size + RECORDS_PER_PAGE - 1) / RECORDS_PER_PAGE
+                        val isCurrentCategory = pagerState.currentPage >= pageOffset &&
+                                pagerState.currentPage < pageOffset + categoryPageCount
+                        val currentPageInCategory = if (isCurrentCategory) pagerState.currentPage - pageOffset else -1
+
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 6.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isCurrentCategory) palette.accent.copy(alpha = 0.2f)
+                                    else Color.Transparent
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = category.emoji,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            if (isCurrentCategory) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = category.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.accent,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                // Show page dots for multi-page categories
+                                if (categoryPageCount > 1) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    repeat(categoryPageCount) { dotIndex ->
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 2.dp)
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (dotIndex == currentPageInCategory) palette.accent
+                                                    else palette.accent.copy(alpha = 0.3f)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        pageOffset += categoryPageCount
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Fixed height for each record card row.
+ * This ensures consistent page height regardless of content.
+ */
+private val RECORD_CARD_HEIGHT = 72.dp
+
+/**
+ * A single page showing records for one category.
+ * HARD CONSTRAINT: Always renders exactly 3 rows (space for 6 records) to maintain fixed height.
+ */
+@Composable
+private fun RecordCategoryPage(
+    page: RecordPage,
+    palette: CarColorPalette
+) {
+    // Pad records to exactly RECORDS_PER_PAGE (6) slots for consistent height
+    val paddedRecords = page.records + List(RECORDS_PER_PAGE - page.records.size) { null }
+    val rows = paddedRecords.chunked(2) // Always 3 rows of 2
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Records in 2-column grid - always 3 rows for fixed height
+        // Note: Category title removed - the swipe indicator at the bottom shows current category
+        rows.forEach { rowRecords ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(RECORD_CARD_HEIGHT),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowRecords.forEach { record ->
+                    if (record != null) {
                         RecordCard(
                             emoji = record.emoji,
                             label = record.label,
@@ -699,12 +843,13 @@ private fun RecordsCard(
                             subtext = record.subtext,
                             palette = palette,
                             onClick = record.onClick,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         )
-                    }
-                    // Fill remaining space if odd number of records
-                    if (rowRecords.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
+                    } else {
+                        // Empty placeholder to maintain grid layout - same size as RecordCard
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
