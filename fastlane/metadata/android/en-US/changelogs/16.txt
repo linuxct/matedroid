@@ -1,0 +1,2 @@
+Fixed:
+- Dashboard: Tire pressure now displays correctly when configured in PSI
