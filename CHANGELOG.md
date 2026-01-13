@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-01-13
+
+### Fixed
+- **Settings**: Force Full Resync now properly deletes all cached data before resyncing, instead of only retrying missing items
+
 ## [0.9.2] - 2026-01-12
 
 ### Fixed
@@ -186,7 +191,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard with basic vehicle status
 - Charges screen with history list
 
-[Unreleased]: https://github.com/vide/matedroid/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/vide/matedroid/compare/v0.9.3...HEAD
+[0.9.3]: https://github.com/vide/matedroid/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/vide/matedroid/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/vide/matedroid/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/vide/matedroid/compare/v0.8.3...v0.9.0

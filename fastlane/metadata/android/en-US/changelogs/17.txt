@@ -1,0 +1,2 @@
+Fixed:
+- Force Full Resync now properly deletes all cached data before resyncing
