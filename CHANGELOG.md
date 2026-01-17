@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-01-17
+
 ### Changed
 - **Drive Details**: Charts now use optimized rendering with data downsampling (LTTB algorithm) for smooth scrolling on long trips
 - **Drive Details**: Charts now display time labels on X-axis (start, 1st quarter, half, 3rd quarter, end)
@@ -224,7 +226,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard with basic vehicle status
 - Charges screen with history list
 
-[Unreleased]: https://github.com/vide/matedroid/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/vide/matedroid/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/vide/matedroid/compare/v0.9.4...v0.10.0
 [0.9.4]: https://github.com/vide/matedroid/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/vide/matedroid/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/vide/matedroid/compare/v0.9.1...v0.9.2

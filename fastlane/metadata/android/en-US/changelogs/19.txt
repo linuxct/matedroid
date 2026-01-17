@@ -1,0 +1,11 @@
+Added:
+- Fullscreen mode for line charts in Drive and Charge details
+- Weather Along the Way in Drive details showing historical weather conditions
+
+Changed:
+- Charts now use optimized rendering with LTTB downsampling for smooth scrolling
+- Charts display time labels on X-axis and 4 Y-axis labels at quarter intervals
+
+Fixed:
+- Date and distance filters now persist when navigating to drive details
+- Scroll position preserved when returning from drive details
