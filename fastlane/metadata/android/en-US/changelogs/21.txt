@@ -1,0 +1,4 @@
+Quick fix for the dashboard status icon.
+
+Fixed:
+- Dashboard now shows a green steering wheel icon when driving instead of grey power button
