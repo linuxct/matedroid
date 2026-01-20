@@ -561,7 +561,7 @@
     <string name="stats_category_weather">Temps i Altitud</string>
 
     <!-- Record category: distance and gap records -->
-    <string name="stats_category_distances">Distàncies</string>
+    <string name="stats_category_misc">Altres</string>
 
     <!-- Record: longest single drive by distance -->
     <string name="record_longest_drive">Viatge més llarg</string>
@@ -627,7 +627,7 @@
     <string name="record_most_distance_day">Dia amb més km</string>
 
     <!-- Format for streak duration. %d is number of days -->
-    <string name="format_days">%d dies</string>
+    <string name="format_days">%.1f dies</string>
 
     <!-- Format for number of drives. %d is the count -->
     <string name="format_drives_count">%d viatges</string>

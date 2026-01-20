@@ -561,7 +561,7 @@
     <string name="stats_category_weather">Meteo e Altitudine</string>
 
     <!-- Record category: distance and gap records -->
-    <string name="stats_category_distances">Distanze</string>
+    <string name="stats_category_misc">Altri</string>
 
     <!-- Record: longest single drive by distance -->
     <string name="record_longest_drive">Viaggio più lungo</string>
@@ -627,7 +627,7 @@
     <string name="record_most_distance_day">Giorno più km</string>
 
     <!-- Format for streak duration. %d is number of days -->
-    <string name="format_days">%d giorni</string>
+    <string name="format_days">%.1f giorni</string>
 
     <!-- Format for number of drives. %d is the count -->
     <string name="format_drives_count">%d viaggi</string>
