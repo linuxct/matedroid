@@ -20,6 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -274,27 +278,31 @@ private fun CountryCard(
             ) {
                 // Distance
                 StatItem(
-                    emoji = "🛣️",
+                    icon = Icons.Default.Route,
                     value = "%.0f km".format(country.totalDistanceKm),
-                    color = palette.onSurface
+                    tint = palette.onSurfaceVariant
                 )
 
-                // Charge energy
+                // Charge energy (MWh if > 999 kWh, otherwise kWh)
                 StatItem(
-                    emoji = "⚡",
-                    value = "%.1f kWh".format(country.totalChargeEnergyKwh),
-                    color = palette.onSurface
+                    icon = Icons.Default.ElectricBolt,
+                    value = if (country.totalChargeEnergyKwh > 999) {
+                        "%.1f MWh".format(country.totalChargeEnergyKwh / 1000)
+                    } else {
+                        "%.0f kWh".format(country.totalChargeEnergyKwh)
+                    },
+                    tint = palette.onSurfaceVariant
                 )
 
                 // Charge count
                 StatItem(
-                    emoji = "🔌",
+                    icon = Icons.Default.EvStation,
                     value = pluralStringResource(
                         R.plurals.charges_count,
                         country.chargeCount,
                         country.chargeCount
                     ),
-                    color = palette.onSurface
+                    tint = palette.onSurfaceVariant
                 )
             }
         }
@@ -303,22 +311,24 @@ private fun CountryCard(
 
 @Composable
 private fun StatItem(
-    emoji: String,
+    icon: ImageVector,
     value: String,
-    color: androidx.compose.ui.graphics.Color
+    tint: androidx.compose.ui.graphics.Color
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = emoji,
-            fontSize = 16.sp
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = tint
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = color
+            color = tint
         )
     }
 }
