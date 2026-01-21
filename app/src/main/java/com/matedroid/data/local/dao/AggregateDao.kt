@@ -568,6 +568,43 @@ interface AggregateDao {
         AND a.countryCode IS NULL
     """)
     suspend fun countChargesNeedingGeocode(carId: Int): Int
+
+    // Get coordinates of drives that need geocoding (have coordinates but no country)
+    @Query("""
+        SELECT startLatitude, startLongitude FROM drive_detail_aggregates
+        WHERE carId = :carId
+        AND startLatitude IS NOT NULL
+        AND startLongitude IS NOT NULL
+        AND startCountryCode IS NULL
+    """)
+    suspend fun getDriveLocationsNeedingGeocode(carId: Int): List<LatLonResult>
+
+    // Get coordinates of charges that need geocoding
+    @Query("""
+        SELECT c.latitude, c.longitude FROM charge_detail_aggregates a
+        JOIN charges_summary c ON a.chargeId = c.chargeId
+        WHERE a.carId = :carId
+        AND c.latitude IS NOT NULL
+        AND c.longitude IS NOT NULL
+        AND a.countryCode IS NULL
+    """)
+    suspend fun getChargeLocationsNeedingGeocode(carId: Int): List<LatLonResult>
+}
+
+/**
+ * Simple lat/lon result for geocoding queries.
+ */
+data class LatLonResult(
+    val startLatitude: Double?,
+    val startLongitude: Double?,
+    val latitude: Double? = null,
+    val longitude: Double? = null
+) {
+    fun toLatLon(): Pair<Double, Double>? {
+        val lat = startLatitude ?: latitude
+        val lon = startLongitude ?: longitude
+        return if (lat != null && lon != null) lat to lon else null
+    }
 }
 
 /**

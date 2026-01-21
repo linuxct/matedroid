@@ -85,6 +85,9 @@ class SyncRepository @Inject constructor(
             return false
         }
 
+        // Re-enqueue any locations that need geocoding (in case queue was cleared)
+        reEnqueueLocationsForGeocoding(carId)
+
         syncManager.markSyncComplete(carId)
         log("Sync complete for car $carId")
         return true
@@ -441,6 +444,78 @@ class SyncRepository @Inject constructor(
 
             chargePointCount = points.size
         )
+    }
+
+    /**
+     * Re-enqueue locations from existing aggregates that still need geocoding.
+     * Also applies any cached geocode data to aggregates that weren't updated.
+     * Returns the number of unique locations enqueued.
+     */
+    suspend fun reEnqueueLocationsForGeocoding(carId: Int): Int {
+        val driveLocations = aggregateDao.getDriveLocationsNeedingGeocode(carId)
+            .mapNotNull { it.toLatLon() }
+        val chargeLocations = aggregateDao.getChargeLocationsNeedingGeocode(carId)
+            .mapNotNull { it.toLatLon() }
+
+        val allLocations = driveLocations + chargeLocations
+        log("Found ${driveLocations.size} drive + ${chargeLocations.size} charge locations needing geocode")
+
+        if (allLocations.isEmpty()) {
+            log("No locations need geocoding")
+            return 0
+        }
+
+        // First, apply any cached geocode data to aggregates
+        val applied = applyCachedGeocodeData(carId, allLocations)
+        if (applied > 0) {
+            log("Applied cached geocode data to $applied locations")
+        }
+
+        // Then enqueue any still-uncached locations
+        val enqueued = geocodingRepository.enqueueLocationsForCar(carId, allLocations)
+        log("Re-enqueued $enqueued unique locations for geocoding")
+        return enqueued
+    }
+
+    /**
+     * Apply cached geocode data to drive/charge aggregates.
+     * This handles the case where geocoding completed but aggregates weren't updated.
+     */
+    private suspend fun applyCachedGeocodeData(carId: Int, locations: List<Pair<Double, Double>>): Int {
+        var appliedCount = 0
+        val uniqueGridCells = locations
+            .map { (lat, lon) ->
+                geocodingRepository.toGridCoord(lat) to geocodingRepository.toGridCoord(lon)
+            }
+            .distinct()
+
+        for ((gridLat, gridLon) in uniqueGridCells) {
+            val cached = geocodingRepository.getFromCacheByGrid(gridLat, gridLon)
+            if (cached != null) {
+                // Update drive aggregates in this grid cell
+                aggregateDao.updateDriveLocationsInGrid(
+                    carId = carId,
+                    gridLat = gridLat,
+                    gridLon = gridLon,
+                    countryCode = cached.countryCode,
+                    countryName = cached.countryName,
+                    regionName = cached.regionName,
+                    city = cached.city
+                )
+                // Update charge aggregates in this grid cell
+                aggregateDao.updateChargeLocationsInGrid(
+                    carId = carId,
+                    gridLat = gridLat,
+                    gridLon = gridLon,
+                    countryCode = cached.countryCode,
+                    countryName = cached.countryName,
+                    regionName = cached.regionName,
+                    city = cached.city
+                )
+                appliedCount++
+            }
+        }
+        return appliedCount
     }
 }
 

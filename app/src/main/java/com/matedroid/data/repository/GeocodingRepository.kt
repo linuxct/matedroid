@@ -65,6 +65,14 @@ class GeocodingRepository @Inject constructor(
     }
 
     /**
+     * Get cached location data by grid coordinates directly.
+     * Returns null if not cached.
+     */
+    suspend fun getFromCacheByGrid(gridLat: Int, gridLon: Int): GeocodeCache? {
+        return geocodeCacheDao.get(gridLat, gridLon)
+    }
+
+    /**
      * Get the next batch of items to geocode.
      */
     suspend fun getNextBatch(limit: Int = 1): List<GeocodeQueueItem> {
