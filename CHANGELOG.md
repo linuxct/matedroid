@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Tire Pressure Notifications**: Background monitoring with alerts when any tire enters or exits a warning state
+  - Uses Teslamate API's TPMS warning flags for detection
+  - Notifications show which tires have low pressure (e.g., "Model 3: Low pressure on Front Left, Rear Right")
+  - Notification when all tires return to normal
+  - Checks every 15 minutes; persists across app restarts and device reboots
+  - Notification channel can be enabled/disabled in Android Settings
 - **Stats for Nerds**: New "Countries Visited" record showing unique countries visited with your Tesla
 - **Countries Visited**: Detail screen with country flag, localized name, drive count, total distance, energy used, and charge count
 - **Countries Visited**: Tap a country to drill down into **Regions Visited** showing stats per region/state
