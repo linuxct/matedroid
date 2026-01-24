@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Countries Visited**: Detail screen with country flag, localized name, drive count, total distance, energy used, and charge count
 - **Countries Visited**: Tap a country to drill down into **Regions Visited** showing stats per region/state
 - **Countries Visited**: Sorting options by first visit, alphabetically, drive count, distance, energy, or charges
+- **Countries Visited**: Interactive OSM map showing charge/drive locations with country boundary highlighting
+  - Toggle between Charges and Drives view (steering wheel icon for drives)
+  - AC charges shown in green, DC charges in yellow (matching app-wide color scheme)
+  - Tappable legend to filter by AC or DC charge type
+  - Year filter chips to view data from specific years
 - **Geocoding**: Background location identification using OpenStreetMap Nominatim with rate limiting and caching
 
 ### Changed
