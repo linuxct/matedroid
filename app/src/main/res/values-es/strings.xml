@@ -713,8 +713,8 @@
 
     <!-- Plural for number of drives in a country -->
     <plurals name="drives_count">
-        <item quantity="one">%d viaje</item>
-        <item quantity="other">%d viajes</item>
+        <item quantity="one">viaje</item>
+        <item quantity="other">viajes</item>
     </plurals>
 
     <!-- Plural for number of charges in a country -->
@@ -762,6 +762,32 @@
 
     <!-- Header card title showing country totals -->
     <string name="regions_country_summary">Resumen del País</string>
+
+    <!-- Map showing charge locations in the country -->
+    <string name="country_charge_map_title">Puntos de Carga</string>
+    <!-- Plural for number of charges on the map. %d is the count -->
+    <plurals name="format_charges_on_map">
+        <item quantity="one">%d carga</item>
+        <item quantity="other">%d cargas</item>
+    </plurals>
+
+    <!-- Map showing drive start locations in the country -->
+    <string name="country_drives_map_title">Puntos de Inicio</string>
+    <!-- Plural for number of drives on the map. %d is the count -->
+    <plurals name="format_drives_on_map">
+        <item quantity="one">%d viaje</item>
+        <item quantity="other">%d viajes</item>
+    </plurals>
+
+    <!-- Map mode toggle labels -->
+    <string name="map_mode_charges">Cargas</string>
+    <string name="map_mode_drives">Viajes</string>
+
+    <!-- Legend label for drive start marker -->
+    <string name="drive_start_legend">Inicio</string>
+
+    <!-- Year filter chip for all years -->
+    <string name="all_years">Todos</string>
 
     <!-- ==================== Mileage Screen ==================== -->
     <!-- Top bar title for mileage screen -->
