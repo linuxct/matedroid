@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Duration Format**: Standardized duration display to "H:MM" format across drives and charges screens (fixes #104)
+- **Distance Format**: Added locale-aware thousands separator to all distance displays (fixes #105)
 
 ### Fixed
 - **Drive Details**: Date/time now displays in proper locale format instead of mixed languages (fixes #103)
