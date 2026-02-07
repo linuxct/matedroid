@@ -36,8 +36,9 @@ data class WheelOption(
  * - Legacy Model 3 (pre-2024): m3_{color}_{wheel}.png
  * - Highland Model 3 (2024+): m3h_{color}_{wheel}.png or m3hp_{color}_{wheel}.png
  * - Legacy Model Y (pre-2025): my_{color}_{wheel}.png
- * - Juniper Model Y (2025+): myj_{color}_{wheel}.png (Standard/Premium)
- * - Juniper Model Y Performance (2025+): myjp_{color}_{wheel}.png (has red calipers)
+ * - Juniper Model Y Standard (2025+): myjs_{color}_{wheel}.png (classic headlights)
+ * - Juniper Model Y Premium (2025+): myj_{color}_{wheel}.png (light strip headlights)
+ * - Juniper Model Y Performance (2025+): myjp_{color}_{wheel}.png (light strip + red calipers)
  *
  * Juniper Model Y trim detection via trim_badging:
  * - "50" = Standard Range (18" Photon wheels)
@@ -72,12 +73,28 @@ object CarImageResolver {
         "stealthgray" to "PN01",
         "midnightcherryred" to "PR00",
         "ultrared" to "PR01",
-        "blackdiamond" to "PX02"
-        // Note: PB02 (Juniper Deep Blue) is handled via fallback - same TeslamateAPI name as PPSB
+        "blackdiamond" to "PX02",
+        // Juniper Model Y blues (distinct from Legacy PPSB Deep Blue Metallic)
+        "glacierblue" to "PB01",
+        "marineblue" to "PB02"
     )
 
-    // Colors only available on Highland/Juniper
-    private val HIGHLAND_JUNIPER_COLORS = setOf("PN00", "PN01", "PR01", "PX02")
+    // Colors only available on Highland/Juniper (not on Legacy)
+    private val HIGHLAND_JUNIPER_COLORS = setOf("PN00", "PN01", "PR01", "PX02", "PB01", "PB02")
+
+    // Colors only available on Legacy models (not on Highland/Juniper)
+    private val LEGACY_ONLY_COLORS = setOf("PMNG", "PMSS", "PPMR", "PMBL")
+
+    // Colors that are Legacy-only for Model Y but shared for Model 3
+    // MY Juniper uses PX02 (Diamond Black) instead of PBSB, and PB01/PB02 instead of PPSB
+    private val MY_LEGACY_ONLY_EXTRA = setOf("PBSB", "PPSB")
+
+    // Colors available on Juniper Premium+Performance but NOT Standard
+    // Juniper Standard only comes in: PPSW, PN01, PX02
+    private val JUNIPER_PREMIUM_ONLY_COLORS = setOf("PN00", "PR01", "PB01")
+
+    // Colors available only on Juniper Performance
+    private val JUNIPER_PERF_ONLY_COLORS = setOf("PB02")
 
     // Wheel types only available on Highland Model 3 (normalized, lowercase)
     // Note: "helix19" from TeslamateAPI is actually Nova 19" wheel
@@ -98,12 +115,11 @@ object CarImageResolver {
     // Juniper Model Y Standard valid colors (limited to 3 colors with 18" Photon)
     private val JUNIPER_MY_STANDARD_COLORS = setOf("PPSW", "PN01", "PX02")
 
-    // Juniper Model Y valid colors (Standard/Premium)
-    // Note: PN00/PR01/PPSB only available with Premium (MTY60) 19"/20" wheels
-    private val JUNIPER_MY_COLORS = setOf("PPSW", "PN01", "PX02", "PN00", "PR01", "PPSB")
+    // Juniper Model Y Premium valid colors (PN00/PR01/PB01 only with Premium MTY60 19"/20" wheels)
+    private val JUNIPER_MY_COLORS = setOf("PPSW", "PN01", "PX02", "PN00", "PR01", "PB01")
 
-    // Juniper Model Y Performance valid colors (all 6 colors)
-    private val JUNIPER_MY_PERF_COLORS = setOf("PPSW", "PN01", "PX02", "PB02", "PN00", "PR01")
+    // Juniper Model Y Performance valid colors (all 7 colors including PB02 Marine Blue)
+    private val JUNIPER_MY_PERF_COLORS = setOf("PPSW", "PN01", "PX02", "PB02", "PN00", "PR01", "PB01")
 
     // Wheel code mappings per model variant
     // Keys are patterns that match the start of the TeslamateAPI wheel type
@@ -159,25 +175,26 @@ object CarImageResolver {
         "18" to "WY18B"
     )
 
-    // Juniper Model Y wheels (Standard/Premium)
+    // Juniper Model Y Premium wheels (19" Crossflow standard, 20" Helix optional)
     private val WHEEL_PATTERNS_MYJ = listOf(
         "helix20" to "WY20A",
         "crossflow19" to "WY19P",
-        "photon18" to "WY18P",
         "20" to "WY20A",
-        "19" to "WY19P",
-        "18" to "WY18P"
+        "19" to "WY19P"
     )
 
-    // Juniper Model Y Standard wheels (only 18" Photon)
+    // Juniper Model Y Standard wheels (18" Photon standard, 19" Crossflow in some markets)
     private val WHEEL_PATTERNS_MYJS = listOf(
         "photon18" to "WY18P",
+        "crossflow19" to "WY19P",
+        "19" to "WY19P",
         "18" to "WY18P"
     )
 
     // Juniper Model Y Performance wheels
     private val WHEEL_PATTERNS_MYJP = listOf(
         "uberturbine21" to "WY21A",
+        "arachnid21" to "WY21A",   // Alternative 21" Performance wheel
         "21" to "WY21A"
     )
 
@@ -203,7 +220,7 @@ object CarImageResolver {
         "m3hp" to "W30P",
         "my" to "WY19B",
         "myjs" to "WY18P",
-        "myj" to "WY18P",
+        "myj" to "WY19P",
         "myjp" to "WY21A",
         "ms" to "WT19",
         "mx" to "WT20"
@@ -330,14 +347,14 @@ object CarImageResolver {
      * Determine which model variant to use based on available data.
      *
      * Highland/Juniper detection heuristics:
-     * 1. If color is a new Highland/Juniper-only color (PN00, PN01, PR01, PX02), use Highland/Juniper
+     * 1. If color is a new Highland/Juniper-only color (PN00, PN01, PR01, PX02, PB01, PB02), use Highland/Juniper
      * 2. If wheel type is a Highland/Juniper-only wheel (Photon18, Glider18, etc.), use Highland/Juniper
      * 3. Otherwise, assume legacy
      *
      * Trim badging for Juniper Model Y:
-     * - "50" = Standard Range (18" Photon wheels)
-     * - "74", "74D" = Long Range/Premium (19" Crossflow wheels)
-     * - "P74D" = Performance (21" Überturbine wheels, red calipers)
+     * - "50" = Standard Range (classic headlights, 18" Photon wheels)
+     * - "74", "74D" = Long Range/Premium (light strip headlights, 19" Crossflow wheels)
+     * - "P74D" = Performance (light strip headlights, 21" Überturbine wheels, red calipers)
      */
     private fun determineModelVariant(
         model: String?,
@@ -359,9 +376,14 @@ object CarImageResolver {
         val isPerformance = trimBadging?.uppercase()?.startsWith("P") == true ||
                 trimBadging?.lowercase()?.contains("performance") == true
 
-        // Check for 21" Überturbine wheels (Performance-only on Juniper)
+        // Check for 21" Überturbine/Arachnid wheels (Performance-only on Juniper)
         val isJuniperPerfWheel = normalizedWheel?.startsWith("uberturbine21") == true ||
+                normalizedWheel?.startsWith("arachnid21") == true ||
                 normalizedWheel?.startsWith("21") == true
+
+        // Check for Juniper Standard indicators
+        val isJuniperStandard = trimBadging?.uppercase() == "50"
+        val isPhoton18Wheel = normalizedWheel?.startsWith("photon18") == true
 
         return when (baseModel) {
             "3" -> when {
@@ -370,9 +392,11 @@ object CarImageResolver {
                 else -> "m3"
             }
             "Y" -> when {
-                // Juniper Performance: P74D trim or 21" wheels
+                // Juniper Performance: P-trim or 21" wheels with Juniper indicators
                 (isHighlandJuniperColor || isJuniperMYWheel || isJuniperPerfWheel) && (isPerformance || isJuniperPerfWheel) -> "myjp"
-                // Juniper Standard/Premium: non-P trim with Juniper colors/wheels
+                // Juniper Standard: trim "50" or Photon18 wheel (Standard-exclusive)
+                (isHighlandJuniperColor || isJuniperMYWheel) && (isJuniperStandard || isPhoton18Wheel) -> "myjs"
+                // Juniper Premium: other Juniper indicators without Standard/Performance markers
                 isHighlandJuniperColor || isJuniperMYWheel -> "myj"
                 else -> "my"
             }
@@ -528,32 +552,100 @@ object CarImageResolver {
         "m3h" to listOf("W38A"),
         "m3hp" to listOf("W30P"),
         "my" to listOf("WY18B", "WY19B", "WY20P"),
-        "myjs" to listOf("WY18P"),
-        "myj" to listOf("WY18P", "WY19P", "WY20A"),
+        "myjs" to listOf("WY18P", "WY19P"),
+        "myj" to listOf("WY19P", "WY20A"),
         "myjp" to listOf("WY21A"),
         "ms" to listOf("WT19"),
         "mx" to listOf("WT20", "WT22")
     )
 
     /**
-     * Get available variants for a model.
+     * Get available variants for a model, optionally filtered by exterior color and wheel type.
+     *
+     * Filtering rules:
+     * - Performance variants only shown when there's cross-generation ambiguity
+     *   (shared colors between Legacy and new gen). When the generation is known,
+     *   trim_badging reliably auto-detects Performance.
+     * - For Model Y: PBSB and PPSB are Legacy-only (Juniper uses PX02 and PB01/PB02)
+     * - Performance-only colors (PB02) auto-select myjp with no alternatives
+     * - Premium-only colors (PN00, PR01, PB01) show only Premium
+     * - Juniper-only colors (PN01, PX02) show Standard + Premium
+     * - Shared colors (PPSW) show all variants including Performance
+     * - Performance is excluded when trim or wheel data rules it out
      *
      * @param model The car model from TeslamateAPI (e.g., "3", "Y")
+     * @param colorCode The mapped color code (e.g., "PMNG", "PN00") - optional
+     * @param trimBadging The trim badging from TeslamateAPI - used to exclude Performance
+     * @param wheelType The wheel type from TeslamateAPI - used to exclude Performance
      * @return List of available variants for the picker
      */
-    fun getVariantsForModel(model: String?): List<CarVariant> {
+    fun getVariantsForModel(
+        model: String?,
+        colorCode: String? = null,
+        trimBadging: String? = null,
+        wheelType: String? = null
+    ): List<CarVariant> {
+        val isNewOnlyColor = colorCode in HIGHLAND_JUNIPER_COLORS
+        val isLegacyOnlyColor = colorCode in LEGACY_ONLY_COLORS
+        val isPremiumOnlyColor = colorCode in JUNIPER_PREMIUM_ONLY_COLORS
+        val isPerfOnlyColor = colorCode in JUNIPER_PERF_ONLY_COLORS
+
+        // Determine if Performance can be ruled out from trim/wheel data
+        val isPerformanceTrim = trimBadging?.uppercase()?.startsWith("P") == true
+        val normalizedWheel = wheelType?.lowercase()?.replace(" ", "")?.replace("-", "")?.replace("_", "")
+        val isPerformanceWheel = normalizedWheel?.let {
+            it.startsWith("performance20") || it.startsWith("uberturbine21") ||
+            it.startsWith("arachnid21") || it.startsWith("21") || it.startsWith("20")
+        } ?: false
+        // Show Performance only if: trim/wheel indicate it, or both are unknown (can't rule it out)
+        val showPerformance = isPerformanceTrim || isPerformanceWheel ||
+            (trimBadging == null && wheelType == null)
+
+        val myLegacy = CarVariant("my", VariantResIds.MY_LEGACY.hashCode())
+        val myStandard = CarVariant("myjs", VariantResIds.MY_STANDARD.hashCode())
+        val myPremium = CarVariant("myj", VariantResIds.MY_PREMIUM.hashCode())
+        val myPerformance = CarVariant("myjp", VariantResIds.MY_PERFORMANCE.hashCode())
+
+        val m3Legacy = CarVariant("m3", VariantResIds.M3_LEGACY.hashCode())
+        val m3Highland = CarVariant("m3h", VariantResIds.M3_HIGHLAND.hashCode())
+        val m3HighlandPerf = CarVariant("m3hp", VariantResIds.M3_HIGHLAND_PERF.hashCode())
+
         return when (model?.uppercase()) {
-            "Y" -> listOf(
-                CarVariant("my", VariantResIds.MY_LEGACY.hashCode()),
-                CarVariant("myjs", VariantResIds.MY_STANDARD.hashCode()),
-                CarVariant("myj", VariantResIds.MY_PREMIUM.hashCode()),
-                CarVariant("myjp", VariantResIds.MY_PERFORMANCE.hashCode())
-            )
-            "3" -> listOf(
-                CarVariant("m3", VariantResIds.M3_LEGACY.hashCode()),
-                CarVariant("m3h", VariantResIds.M3_HIGHLAND.hashCode()),
-                CarVariant("m3hp", VariantResIds.M3_HIGHLAND_PERF.hashCode())
-            )
+            "Y" -> {
+                // MY-specific: PBSB (Solid Black) and PPSB (Deep Blue) are Legacy-only
+                val isMyLegacyOnly = colorCode in MY_LEGACY_ONLY_EXTRA
+                when {
+                    // Performance-only color (PB02): only valid variant
+                    isPerfOnlyColor -> listOf(myPerformance)
+                    // Legacy-only colors (global + MY-specific)
+                    isLegacyOnlyColor || isMyLegacyOnly -> listOf(myLegacy)
+                    // Premium-only colors: gen known, no Performance needed
+                    isPremiumOnlyColor -> listOf(myPremium)
+                    // Other Juniper-only colors (PN01, PX02): Standard + Premium, no Performance
+                    isNewOnlyColor -> listOf(myStandard, myPremium)
+                    // Shared colors (PPSW, null): cross-gen ambiguity, show all
+                    // Performance only if trim/wheel don't rule it out
+                    else -> if (showPerformance) {
+                        listOf(myLegacy, myStandard, myPremium, myPerformance)
+                    } else {
+                        listOf(myLegacy, myStandard, myPremium)
+                    }
+                }
+            }
+            "3" -> {
+                when {
+                    isLegacyOnlyColor -> listOf(m3Legacy)
+                    // Highland-only colors: gen known, no Performance needed
+                    isNewOnlyColor -> listOf(m3Highland)
+                    // Shared colors (PBSB, PPSW, PPSB): cross-gen ambiguity
+                    // Performance only if trim/wheel don't rule it out
+                    else -> if (showPerformance) {
+                        listOf(m3Legacy, m3Highland, m3HighlandPerf)
+                    } else {
+                        listOf(m3Legacy, m3Highland)
+                    }
+                }
+            }
             else -> emptyList() // Model S/X don't have multiple variants to pick from
         }
     }
@@ -561,14 +653,35 @@ object CarImageResolver {
     /**
      * Get available wheels for a variant, with preview paths.
      *
+     * When wheelType is provided (from API) and maps to this variant, returns only
+     * that wheel. When wheelType doesn't map (e.g., API reports a legacy wheel name
+     * on a Highland car), returns ALL wheels so the user can browse and pick.
+     *
      * @param variant The model variant (e.g., "my", "myj")
      * @param colorCode The color code for generating preview paths (defaults to PPSW)
+     * @param wheelType The wheel type from TeslamateAPI (e.g., "Crossflow19") - optional
      * @return List of wheel options with preview paths
      */
-    fun getWheelsForVariant(variant: String, colorCode: String?): List<WheelOption> {
+    fun getWheelsForVariant(variant: String, colorCode: String?, wheelType: String? = null): List<WheelOption> {
         val wheels = VARIANT_WHEELS[variant] ?: return emptyList()
         val color = colorCode ?: DEFAULT_COLORS[variant] ?: "PPSW"
         val validatedColor = validateColorForVariant(variant, color)
+
+        // When wheel type is known and maps to this variant, show only that wheel
+        if (wheelType != null) {
+            val mappedWheel = mapWheel(variant, wheelType)
+            if (mappedWheel != null && mappedWheel in wheels) {
+                return listOf(
+                    WheelOption(
+                        code = mappedWheel,
+                        displayName = WHEEL_DISPLAY_NAMES[mappedWheel] ?: mappedWheel,
+                        assetPath = "car_images/${variant}_${validatedColor}_${mappedWheel}.png"
+                    )
+                )
+            }
+            // Wheel doesn't map to this variant (e.g., API reports "Pinwheel18CapKit"
+            // on a Highland M3) - show all wheels so the user can pick
+        }
 
         return wheels.map { wheelCode ->
             WheelOption(

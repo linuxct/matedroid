@@ -80,8 +80,11 @@ fun CarImagePickerDialog(
     onConfirm: (CarImageOverride) -> Unit,
     onReset: () -> Unit
 ) {
-    val variants = remember(model) { CarImageResolver.getVariantsForModel(model) }
     val colorCode = remember(exteriorColor) { CarImageResolver.mapColor(exteriorColor) }
+    // Filter variants based on detected color, trim and wheel
+    val variants = remember(model, colorCode, trimBadging, wheelType) {
+        CarImageResolver.getVariantsForModel(model, colorCode, trimBadging, wheelType)
+    }
 
     // Compute the detected default from API data
     val detectedDefault = remember(model, exteriorColor, wheelType, trimBadging) {
@@ -116,13 +119,21 @@ fun CarImagePickerDialog(
     }
 
     // Initialize selected variant from override or detected default
+    // If the override's variant isn't in the available variants (e.g., stale override
+    // from a different car config), ignore it and use the detected default
     var selectedVariant by remember(currentOverride, variants) {
-        mutableStateOf(currentOverride?.variant ?: detectedDefault.variant)
+        val overrideVariant = currentOverride?.variant
+        val initialVariant = if (overrideVariant != null && variants.any { it.id == overrideVariant }) {
+            overrideVariant
+        } else {
+            detectedDefault.variant
+        }
+        mutableStateOf(initialVariant)
     }
 
-    // Get wheels for selected variant
-    val wheels = remember(selectedVariant, colorCode) {
-        CarImageResolver.getWheelsForVariant(selectedVariant, colorCode)
+    // Get wheels for selected variant (filtered by detected wheel type if known)
+    val wheels = remember(selectedVariant, colorCode, wheelType) {
+        CarImageResolver.getWheelsForVariant(selectedVariant, colorCode, wheelType)
     }
 
     // Initialize selected wheel from override, or detected default if on default variant
@@ -135,7 +146,7 @@ fun CarImagePickerDialog(
 
     // Update selected wheel when variant changes - reset to default or null
     LaunchedEffect(selectedVariant) {
-        val newWheels = CarImageResolver.getWheelsForVariant(selectedVariant, colorCode)
+        val newWheels = CarImageResolver.getWheelsForVariant(selectedVariant, colorCode, wheelType)
         if (newWheels.isNotEmpty() && (selectedWheel == null || newWheels.none { it.code == selectedWheel })) {
             selectedWheel = if (selectedVariant == detectedDefault.variant) {
                 detectedDefault.wheelCode
