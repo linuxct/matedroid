@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0-beta2] - 2026-02-11
+
 ### Fixed
 - **Dashboard / Notifications**: Live charge navigation and notification deep-link are now hidden when TeslaMate API < 1.24 (endpoint unavailable) (#155)
 
@@ -371,7 +373,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard with basic vehicle status
 - Charges screen with history list
 
-[Unreleased]: https://github.com/vide/matedroid/compare/v1.1.0-beta1...HEAD
+[Unreleased]: https://github.com/vide/matedroid/compare/v1.1.0-beta2...HEAD
+[1.1.0-beta2]: https://github.com/vide/matedroid/compare/v1.1.0-beta1...v1.1.0-beta2
 [1.1.0-beta1]: https://github.com/vide/matedroid/compare/v1.0.0...v1.1.0-beta1
 [1.0.0]: https://github.com/vide/matedroid/compare/v0.12.4...v1.0.0
 [0.12.4]: https://github.com/vide/matedroid/compare/v0.12.3...v0.12.4
