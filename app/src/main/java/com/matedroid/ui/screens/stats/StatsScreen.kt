@@ -67,8 +67,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.matedroid.BuildConfig
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
@@ -716,6 +718,8 @@ private fun RecordsCard(
     onRangeRecordClick: (MaxDistanceBetweenChargesRecord) -> Unit,
     onGapRecordClick: (Double, String, String, String) -> Unit // gapDays, fromDate, toDate, title
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     // Pre-compute localized strings for use in lambdas
     val labelLongestDrive = stringResource(R.string.record_longest_drive)
     val labelTopSpeed = stringResource(R.string.record_top_speed)
@@ -911,6 +915,7 @@ private fun RecordsCard(
                                 pagerState.currentPage < pageOffset + categoryPageCount
                         val currentPageInCategory = if (isCurrentCategory) pagerState.currentPage - pageOffset else -1
 
+                        val targetPage = pageOffset
                         Row(
                             modifier = Modifier
                                 .padding(horizontal = 6.dp)
@@ -919,6 +924,11 @@ private fun RecordsCard(
                                     if (isCurrentCategory) palette.accent.copy(alpha = 0.2f)
                                     else Color.Transparent
                                 )
+                                .clickable {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(targetPage)
+                                    }
+                                }
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
