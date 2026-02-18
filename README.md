@@ -1,5 +1,5 @@
-# MateDroid
-
+# MateDroid 
+ 
 <p>
 <a href="https://f-droid.org/packages/com.matedroid/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80" align="left"></a>
 <a href="https://play.google.com/store/apps/details?id=com.matedroid"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80" align="left"></a>
