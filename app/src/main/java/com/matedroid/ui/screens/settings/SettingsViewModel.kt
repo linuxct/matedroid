@@ -210,14 +210,26 @@ class SettingsViewModel @Inject constructor(
             }
 
             // Test primary server
-            val primaryResult = when (val result = repository.testConnection(primaryUrl, _uiState.value.acceptInvalidCerts)) {
+            val primaryResult = when (val result = repository.testConnection(
+                serverUrl = primaryUrl,
+                acceptInvalidCerts = _uiState.value.acceptInvalidCerts,
+                apiToken = _uiState.value.apiToken,
+                basicAuthUser = _uiState.value.basicAuthUser,
+                basicAuthPass = _uiState.value.basicAuthPass
+            )) {
                 is ApiResult.Success -> ServerTestResult.Success
                 is ApiResult.Error -> ServerTestResult.Failure(result.message)
             }
 
             // Test secondary server if configured
             val secondaryResult = if (secondaryUrl.isNotBlank()) {
-                when (val result = repository.testConnection(secondaryUrl, _uiState.value.acceptInvalidCerts)) {
+                when (val result = repository.testConnection(
+                    serverUrl = secondaryUrl,
+                    acceptInvalidCerts = _uiState.value.acceptInvalidCerts,
+                    apiToken = _uiState.value.apiToken,
+                    basicAuthUser = _uiState.value.basicAuthUser,
+                    basicAuthPass = _uiState.value.basicAuthPass
+                )) {
                     is ApiResult.Success -> ServerTestResult.Success
                     is ApiResult.Error -> ServerTestResult.Failure(result.message)
                 }

@@ -109,21 +109,27 @@ class TeslamateApiFactory(
      * @param acceptInvalidCerts Override for accepting invalid certificates. If null, uses the setting from DataStore.
      * @return A TeslamateApi instance configured for the given URL
      */
-    fun create(baseUrl: String, acceptInvalidCerts: Boolean? = null): TeslamateApi {
+    fun create(
+        baseUrl: String,
+        acceptInvalidCerts: Boolean? = null,
+        apiToken: String? = null,
+        basicAuthUser: String? = null,
+        basicAuthPass: String? = null
+    ): TeslamateApi {
         val normalizedUrl = baseUrl.trimEnd('/') + "/"
         val settings = runBlocking { settingsDataStore.settings.first() }
         val useInsecure = acceptInvalidCerts ?: settings.acceptInvalidCerts
-        val apiToken = settings.apiToken
-        val basicAuthUser = settings.basicAuthUser
-        val basicAuthPass = settings.basicAuthPass
+        val finalApiToken = apiToken ?: settings.apiToken
+        val finalBasicAuthUser = basicAuthUser ?: settings.basicAuthUser
+        val finalBasicAuthPass = basicAuthPass ?: settings.basicAuthPass
 
-        val cacheKey = ApiCacheKey(normalizedUrl, useInsecure, apiToken, basicAuthUser, basicAuthPass)
+        val cacheKey = ApiCacheKey(normalizedUrl, useInsecure, finalApiToken, finalBasicAuthUser, finalBasicAuthPass)
 
         // Return cached API if available
         apiCache[cacheKey]?.let { return it }
 
         // Create new API instance
-        val okHttpClient = createOkHttpClient(apiToken, basicAuthUser, basicAuthPass, useInsecure)
+        val okHttpClient = createOkHttpClient(finalApiToken, finalBasicAuthUser, finalBasicAuthPass, useInsecure)
 
         val api = Retrofit.Builder()
             .baseUrl(normalizedUrl)

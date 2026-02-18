@@ -184,9 +184,15 @@ class TeslamateRepository @Inject constructor(
         return primaryResult ?: ApiResult.Error("Connection failed")
     }
 
-    suspend fun testConnection(serverUrl: String, acceptInvalidCerts: Boolean = false): ApiResult<Unit> {
+    suspend fun testConnection(
+        serverUrl: String,
+        acceptInvalidCerts: Boolean = false,
+        apiToken: String? = null,
+        basicAuthUser: String? = null,
+        basicAuthPass: String? = null
+    ): ApiResult<Unit> {
         return try {
-            val api = apiFactory.create(serverUrl, acceptInvalidCerts)
+            val api = apiFactory.create(serverUrl, acceptInvalidCerts, apiToken, basicAuthUser, basicAuthPass)
             val response = api.ping()
             if (response.isSuccessful) {
                 ApiResult.Success(Unit)
