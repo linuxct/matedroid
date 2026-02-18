@@ -48,6 +48,8 @@ data class AppSettings(
     val serverUrl: String = "",
     val secondaryServerUrl: String = "",
     val apiToken: String = "",
+    val basicAuthUser: String = "",
+    val basicAuthPass: String = "",
     val acceptInvalidCerts: Boolean = false,
     val currencyCode: String = "EUR",
     val showShortDrivesCharges: Boolean = false,
@@ -68,6 +70,8 @@ class SettingsDataStore @Inject constructor(
     private val serverUrlKey = stringPreferencesKey("server_url")
     private val secondaryServerUrlKey = stringPreferencesKey("secondary_server_url")
     private val apiTokenKey = stringPreferencesKey("api_token")
+    private val basicAuthUserKey = stringPreferencesKey("basic_auth_user")
+    private val basicAuthPassKey = stringPreferencesKey("basic_auth_pass")
     private val acceptInvalidCertsKey = booleanPreferencesKey("accept_invalid_certs")
     private val currencyCodeKey = stringPreferencesKey("currency_code")
     private val showShortDrivesChargesKey = booleanPreferencesKey("show_short_drives_charges")
@@ -80,6 +84,8 @@ class SettingsDataStore @Inject constructor(
             serverUrl = preferences[serverUrlKey] ?: "",
             secondaryServerUrl = preferences[secondaryServerUrlKey] ?: "",
             apiToken = preferences[apiTokenKey] ?: "",
+            basicAuthUser = preferences[basicAuthUserKey] ?: "",
+            basicAuthPass = preferences[basicAuthPassKey] ?: "",
             acceptInvalidCerts = preferences[acceptInvalidCertsKey] ?: false,
             currencyCode = preferences[currencyCodeKey] ?: "EUR",
             showShortDrivesCharges = preferences[showShortDrivesChargesKey] ?: false,
@@ -136,6 +142,8 @@ class SettingsDataStore @Inject constructor(
         serverUrl: String,
         secondaryServerUrl: String,
         apiToken: String,
+        basicAuthUser: String,
+        basicAuthPass: String,
         acceptInvalidCerts: Boolean,
         currencyCode: String
     ) {
@@ -143,6 +151,8 @@ class SettingsDataStore @Inject constructor(
             preferences[serverUrlKey] = serverUrl
             preferences[secondaryServerUrlKey] = secondaryServerUrl
             preferences[apiTokenKey] = apiToken
+            preferences[basicAuthUserKey] = basicAuthUser
+            preferences[basicAuthPassKey] = basicAuthPass
             preferences[acceptInvalidCertsKey] = acceptInvalidCerts
             preferences[currencyCodeKey] = currencyCode
         }

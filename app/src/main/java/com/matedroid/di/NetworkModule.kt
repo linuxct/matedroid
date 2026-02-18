@@ -84,7 +84,9 @@ object NetworkModule {
 private data class ApiCacheKey(
     val baseUrl: String,
     val acceptInvalidCerts: Boolean,
-    val apiToken: String
+    val apiToken: String,
+    val basicAuthUser: String,
+    val basicAuthPass: String
 )
 
 /**
@@ -112,14 +114,16 @@ class TeslamateApiFactory(
         val settings = runBlocking { settingsDataStore.settings.first() }
         val useInsecure = acceptInvalidCerts ?: settings.acceptInvalidCerts
         val apiToken = settings.apiToken
+        val basicAuthUser = settings.basicAuthUser
+        val basicAuthPass = settings.basicAuthPass
 
-        val cacheKey = ApiCacheKey(normalizedUrl, useInsecure, apiToken)
+        val cacheKey = ApiCacheKey(normalizedUrl, useInsecure, apiToken, basicAuthUser, basicAuthPass)
 
         // Return cached API if available
         apiCache[cacheKey]?.let { return it }
 
         // Create new API instance
-        val okHttpClient = createOkHttpClient(apiToken, useInsecure)
+        val okHttpClient = createOkHttpClient(apiToken, basicAuthUser, basicAuthPass, useInsecure)
 
         val api = Retrofit.Builder()
             .baseUrl(normalizedUrl)
@@ -148,17 +152,42 @@ class TeslamateApiFactory(
         apiCache.clear()
     }
 
-    private fun createOkHttpClient(apiToken: String, acceptInvalidCerts: Boolean): OkHttpClient {
+    private fun createOkHttpClient(
+        apiToken: String,
+        basicAuthUser: String,
+        basicAuthPass: String,
+        acceptInvalidCerts: Boolean
+    ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val request = if (apiToken.isNotBlank()) {
-                    chain.request().newBuilder()
-                        .addHeader("Authorization", "Bearer $apiToken")
-                        .build()
+                val originalRequest = chain.request()
+                val requestBuilder = originalRequest.newBuilder()
+
+                if (basicAuthUser.isNotBlank() || basicAuthPass.isNotBlank()) {
+                    // Add Basic Auth header
+                    val credentials = "$basicAuthUser:$basicAuthPass"
+                    val encodedCredentials = android.util.Base64.encodeToString(
+                        credentials.toByteArray(),
+                        android.util.Base64.NO_WRAP
+                    )
+                    requestBuilder.addHeader("Authorization", "Basic $encodedCredentials")
+
+                    // If API Token is also present, move it to query parameter
+                    // per TeslamateApi docs: "Adding URI parameter ?token=<token>"
+                    if (apiToken.isNotBlank()) {
+                        val newUrl = originalRequest.url.newBuilder()
+                            .addQueryParameter("token", apiToken)
+                            .build()
+                        requestBuilder.url(newUrl)
+                    }
                 } else {
-                    chain.request()
+                    // Standard Bearer Auth
+                    if (apiToken.isNotBlank()) {
+                        requestBuilder.addHeader("Authorization", "Bearer $apiToken")
+                    }
                 }
-                chain.proceed(request)
+
+                chain.proceed(requestBuilder.build())
             }
             .connectTimeout(1, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
