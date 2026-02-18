@@ -122,6 +122,8 @@ fun SettingsScreen(
                 onServerUrlChange = viewModel::updateServerUrl,
                 onSecondaryServerUrlChange = viewModel::updateSecondaryServerUrl,
                 onApiTokenChange = viewModel::updateApiToken,
+                onBasicAuthUserChange = viewModel::updateBasicAuthUser,
+                onBasicAuthPassChange = viewModel::updateBasicAuthPass,
                 onAcceptInvalidCertsChange = viewModel::updateAcceptInvalidCerts,
                 onCurrencyChange = viewModel::updateCurrency,
                 onShowShortDrivesChargesChange = viewModel::updateShowShortDrivesCharges,
@@ -203,6 +205,8 @@ private fun SettingsContent(
     onServerUrlChange: (String) -> Unit,
     onSecondaryServerUrlChange: (String) -> Unit,
     onApiTokenChange: (String) -> Unit,
+    onBasicAuthUserChange: (String) -> Unit,
+    onBasicAuthPassChange: (String) -> Unit,
     onAcceptInvalidCertsChange: (Boolean) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onShowShortDrivesChargesChange: (Boolean) -> Unit,
@@ -215,6 +219,7 @@ private fun SettingsContent(
     onRunTpmsCheckNow: () -> Unit = {}
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
+    var basicAuthPasswordVisible by remember { mutableStateOf(false) }
     var currencyDropdownExpanded by remember { mutableStateOf(false) }
     var showShortDrivesChargesInfoDialog by remember { mutableStateOf(false) }
     var showResyncConfirmDialog by remember { mutableStateOf(false) }
@@ -324,6 +329,63 @@ private fun SettingsContent(
 
             Text(
                 text = stringResource(R.string.settings_api_token_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Basic Auth
+            OutlinedTextField(
+                value = uiState.basicAuthUser,
+                onValueChange = onBasicAuthUserChange,
+                label = { Text(stringResource(R.string.settings_basic_auth_username_label)) },
+                placeholder = { Text(stringResource(R.string.settings_basic_auth_username_placeholder)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("basicAuthUserInput"),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                enabled = !uiState.isTesting && !uiState.isSaving
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = uiState.basicAuthPass,
+                onValueChange = onBasicAuthPassChange,
+                label = { Text(stringResource(R.string.settings_basic_auth_password_label)) },
+                placeholder = { Text(stringResource(R.string.settings_basic_auth_password_placeholder)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("basicAuthPassInput"),
+                singleLine = true,
+                visualTransformation = if (basicAuthPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = { basicAuthPasswordVisible = !basicAuthPasswordVisible }) {
+                        Icon(
+                            imageVector = if (basicAuthPasswordVisible) {
+                                Icons.Filled.VisibilityOff
+                            } else {
+                                Icons.Filled.Visibility
+                            },
+                            contentDescription = stringResource(
+                                if (basicAuthPasswordVisible) R.string.hide_password else R.string.show_password
+                            )
+                        )
+                    }
+                },
+                enabled = !uiState.isTesting && !uiState.isSaving
+            )
+
+            Text(
+                text = stringResource(R.string.settings_basic_auth_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
@@ -798,6 +860,8 @@ private fun SettingsScreenPreview() {
             onServerUrlChange = {},
             onSecondaryServerUrlChange = {},
             onApiTokenChange = {},
+            onBasicAuthUserChange = {},
+            onBasicAuthPassChange = {},
             onAcceptInvalidCertsChange = {},
             onCurrencyChange = {},
             onShowShortDrivesChargesChange = {},
@@ -822,6 +886,8 @@ private fun SettingsScreenWithResultPreview() {
             onServerUrlChange = {},
             onSecondaryServerUrlChange = {},
             onApiTokenChange = {},
+            onBasicAuthUserChange = {},
+            onBasicAuthPassChange = {},
             onAcceptInvalidCertsChange = {},
             onCurrencyChange = {},
             onShowShortDrivesChargesChange = {},
@@ -848,6 +914,8 @@ private fun SettingsScreenWithBothResultsPreview() {
             onServerUrlChange = {},
             onSecondaryServerUrlChange = {},
             onApiTokenChange = {},
+            onBasicAuthUserChange = {},
+            onBasicAuthPassChange = {},
             onAcceptInvalidCertsChange = {},
             onCurrencyChange = {},
             onShowShortDrivesChargesChange = {},
@@ -870,6 +938,8 @@ private fun SettingsScreenWithWarningPreview() {
             onServerUrlChange = {},
             onSecondaryServerUrlChange = {},
             onApiTokenChange = {},
+            onBasicAuthUserChange = {},
+            onBasicAuthPassChange = {},
             onAcceptInvalidCertsChange = {},
             onCurrencyChange = {},
             onShowShortDrivesChargesChange = {},

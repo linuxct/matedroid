@@ -35,6 +35,8 @@ data class SettingsUiState(
     val serverUrl: String = "",
     val secondaryServerUrl: String = "",
     val apiToken: String = "",
+    val basicAuthUser: String = "",
+    val basicAuthPass: String = "",
     val acceptInvalidCerts: Boolean = false,
     val currencyCode: String = "EUR",
     val showShortDrivesCharges: Boolean = false,
@@ -94,6 +96,8 @@ class SettingsViewModel @Inject constructor(
                 serverUrl = settings.serverUrl,
                 secondaryServerUrl = settings.secondaryServerUrl,
                 apiToken = settings.apiToken,
+                basicAuthUser = settings.basicAuthUser,
+                basicAuthPass = settings.basicAuthPass,
                 acceptInvalidCerts = settings.acceptInvalidCerts,
                 currencyCode = settings.currencyCode,
                 showShortDrivesCharges = settings.showShortDrivesCharges,
@@ -121,6 +125,22 @@ class SettingsViewModel @Inject constructor(
     fun updateApiToken(token: String) {
         _uiState.value = _uiState.value.copy(
             apiToken = token,
+            testResult = null,
+            error = null
+        )
+    }
+
+    fun updateBasicAuthUser(user: String) {
+        _uiState.value = _uiState.value.copy(
+            basicAuthUser = user,
+            testResult = null,
+            error = null
+        )
+    }
+
+    fun updateBasicAuthPass(pass: String) {
+        _uiState.value = _uiState.value.copy(
+            basicAuthPass = pass,
             testResult = null,
             error = null
         )
@@ -258,6 +278,8 @@ class SettingsViewModel @Inject constructor(
                     serverUrl = url,
                     secondaryServerUrl = secondaryUrl,
                     apiToken = _uiState.value.apiToken,
+                    basicAuthUser = _uiState.value.basicAuthUser,
+                    basicAuthPass = _uiState.value.basicAuthPass,
                     acceptInvalidCerts = _uiState.value.acceptInvalidCerts,
                     currencyCode = _uiState.value.currencyCode
                 )
